@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/escrow-tf/steam/api/web"
+	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/steamlang"
 	"github.com/escrow-tf/steam/totp"
@@ -29,7 +29,7 @@ type Client struct {
 	client    *http.Client
 }
 
-func NewClient(totpState *totp.State, steamID steamid.SteamID, webClient *web.Transport) (*Client, error) {
+func NewClient(totpState *totp.State, steamID steamid.SteamID, transport *api.Transport) (*Client, error) {
 	//jar, err := cookiejar.New(nil)
 	//if err != nil {
 	//	return nil, err
@@ -62,7 +62,7 @@ func NewClient(totpState *totp.State, steamID steamid.SteamID, webClient *web.Tr
 	return &Client{
 		totpState: totpState,
 		steamID:   steamID,
-		client:    webClient.HttpClient(),
+		client:    transport.HttpClient(),
 	}, nil
 }
 

@@ -3,7 +3,7 @@
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/escrow-tf/steam/api/web"
+	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
 	"io"
 	"log"
@@ -17,9 +17,9 @@ type Client struct {
 	client *http.Client
 }
 
-func NewClient(webClient *web.Transport) *Client {
+func NewClient(transport *api.Transport) *Client {
 	return &Client{
-		client: webClient.HttpClient(),
+		client: transport.HttpClient(),
 	}
 }
 

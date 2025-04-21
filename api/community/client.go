@@ -2,7 +2,7 @@
 
 import (
 	"fmt"
-	"github.com/escrow-tf/steam/api/web"
+	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
 	"net/http"
 	"net/url"
@@ -12,11 +12,11 @@ import (
 const BaseURL = "https://www.steamcommunity.com"
 
 type Client struct {
-	webClient *web.Transport
+	transport *api.Transport
 }
 
-func NewClient(webClient *web.Transport) *Client {
-	return &Client{webClient: webClient}
+func NewClient(transport *api.Transport) *Client {
+	return &Client{transport: transport}
 }
 
 type PlayerInventoryRequest struct {
@@ -125,7 +125,7 @@ func (c Client) GetPlayerInventory(steamID steamid.SteamID, appID, contextID, la
 		start:     start,
 	}
 	response := &PlayerInventory{}
-	sendErr := c.webClient.Send(request, response)
+	sendErr := c.transport.Send(request, response)
 	if sendErr != nil {
 		return nil, sendErr
 	}

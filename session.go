@@ -4,10 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/api/auth"
 	"github.com/escrow-tf/steam/api/mobileconf"
 	"github.com/escrow-tf/steam/api/tradeoffer"
-	"github.com/escrow-tf/steam/api/web"
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/totp"
 	"github.com/golang-jwt/jwt/v5"
@@ -31,7 +31,7 @@ func (accountState *AccountState) TotpState() *totp.State {
 
 type WebSession struct {
 	state            *AccountState
-	webClient        *web.Transport
+	transport        *api.Transport
 	authClient       *auth.Client
 	mobileConfClient *mobileconf.Client
 	tradeOfferClient *tradeoffer.Client
@@ -65,7 +65,7 @@ func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, e
 		return nil, fmt.Errorf("os.Hostname() failed: %v", err)
 	}
 
-	webTransport := web.NewTransport(webApiKey)
+	webTransport := api.NewTransport(webApiKey)
 	authClient := auth.NewClient(webTransport)
 
 	encryptedPassword, err := authClient.EncryptAccountPassword(accountState.accountName, accountState.password)
@@ -130,7 +130,7 @@ func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, e
 
 	webSession := &WebSession{
 		state:            accountState,
-		webClient:        webTransport,
+		transport:        webTransport,
 		authClient:       authClient,
 		mobileConfClient: mobileConfClient,
 		tradeOfferClient: tradeOfferClient,
@@ -219,7 +219,7 @@ func (w *WebSession) finalizeLogin() error {
 
 	steamLoginSecure := fmt.Sprintf("%s||%s", w.steamId.String(), w.accessToken)
 	cookieUrl := &url.URL{Scheme: "https", Host: "steamcommunity.com", Path: "/"}
-	w.webClient.CookieJar().SetCookies(cookieUrl, []*http.Cookie{
+	w.transport.CookieJar().SetCookies(cookieUrl, []*http.Cookie{
 		&http.Cookie{
 			Name:  "sessionid",
 			Value: string(sessionIdBytes),
@@ -253,7 +253,7 @@ func (w *WebSession) SteamId() steamid.SteamID {
 
 func (w *WebSession) SessionId() (string, error) {
 	steamUrl := &url.URL{Scheme: "https", Host: "steamcommunity.com", Path: "/"}
-	steamCookies := w.webClient.CookieJar().Cookies(steamUrl)
+	steamCookies := w.transport.CookieJar().Cookies(steamUrl)
 	for _, cookie := range steamCookies {
 		if strings.ToLower(cookie.Name) == "sessionid" {
 			return cookie.Value, nil

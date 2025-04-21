@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/escrow-tf/steam/api/web"
+	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/gorsa"
 	"github.com/escrow-tf/steam/steamid"
 	"math/big"
@@ -33,7 +33,7 @@ func (g GetRsaKeyRequest) Values() (url.Values, error) {
 }
 
 func (g GetRsaKeyRequest) Url() string {
-	return fmt.Sprintf("%v/IAuthenticationService/GetPasswordRSAPublicKey/v1/", web.BaseURL)
+	return fmt.Sprintf("%v/IAuthenticationService/GetPasswordRSAPublicKey/v1/", api.BaseURL)
 }
 
 type PublicRsaKey struct {
@@ -71,17 +71,17 @@ func (r GetRsaKeyResponse) PublicKey() (PublicRsaKey, error) {
 }
 
 type Client struct {
-	webClient *web.Transport
+	transport *api.Transport
 }
 
-func NewClient(webClient *web.Transport) *Client {
-	return &Client{webClient}
+func NewClient(transport *api.Transport) *Client {
+	return &Client{transport}
 }
 
 func (c Client) GetPublicRsaKey(accountName string) (PublicRsaKey, error) {
 	request := GetRsaKeyRequest{accountName: accountName}
 	var response GetRsaKeyResponse
-	sendErr := c.webClient.Send(request, &response)
+	sendErr := c.transport.Send(request, &response)
 	if sendErr != nil {
 		return PublicRsaKey{}, sendErr
 	}
@@ -203,7 +203,7 @@ func (r StartSessionRequest) Values() (url.Values, error) {
 }
 
 func (r StartSessionRequest) Url() string {
-	return fmt.Sprintf("%v/IAuthenticationService/BeginAuthSessionViaCredentials/v1/", web.BaseURL)
+	return fmt.Sprintf("%v/IAuthenticationService/BeginAuthSessionViaCredentials/v1/", api.BaseURL)
 }
 
 type StartSessionResponse struct {
@@ -232,7 +232,7 @@ func (c Client) StartSessionWithCredentials(accountName string, password Encrypt
 		QosLevel:            2,
 	}
 	var response StartSessionResponse
-	sendErr := c.webClient.Send(request, &response)
+	sendErr := c.transport.Send(request, &response)
 	if sendErr != nil {
 		return StartSessionResponse{}, sendErr
 	}
@@ -265,7 +265,7 @@ func (r UpdateSessionWithSteamGuardCodeRequest) Values() (url.Values, error) {
 }
 
 func (r UpdateSessionWithSteamGuardCodeRequest) Url() string {
-	return fmt.Sprintf("%v/IAuthenticationService/UpdateAuthSessionWithSteamGuardCode/v1/", web.BaseURL)
+	return fmt.Sprintf("%v/IAuthenticationService/UpdateAuthSessionWithSteamGuardCode/v1/", api.BaseURL)
 }
 
 func (c Client) SubmitSteamGuardCode(clientID string, steamID steamid.SteamID, code string) error {
@@ -279,7 +279,7 @@ func (c Client) SubmitSteamGuardCode(clientID string, steamID steamid.SteamID, c
 		Code:     code,
 		CodeType: DeviceCodeGuardType,
 	}
-	sendErr := c.webClient.Send(request, nil)
+	sendErr := c.transport.Send(request, nil)
 	if sendErr != nil {
 		return sendErr
 	}
@@ -308,7 +308,7 @@ func (r PollSessionStatusRequest) Values() (url.Values, error) {
 }
 
 func (r PollSessionStatusRequest) Url() string {
-	return fmt.Sprintf("%v/IAuthenticationService/PollAuthSessionStatus/v1/", web.BaseURL)
+	return fmt.Sprintf("%v/IAuthenticationService/PollAuthSessionStatus/v1/", api.BaseURL)
 }
 
 type PollSessionStatusResponse struct {
@@ -328,7 +328,7 @@ func (c Client) PollSessionStatus(clientID string, requestID string) (PollSessio
 		RequestID: requestID,
 	}
 	var response PollSessionStatusResponse
-	sendErr := c.webClient.Send(request, &response)
+	sendErr := c.transport.Send(request, &response)
 	if sendErr != nil {
 		return PollSessionStatusResponse{}, sendErr
 	}
@@ -358,7 +358,7 @@ func (r GenerateAccessTokenRequest) Values() (url.Values, error) {
 }
 
 func (r GenerateAccessTokenRequest) Url() string {
-	return fmt.Sprintf("%v/IAuthenticationService/GenerateAccessTokenForApp/v1/", web.BaseURL)
+	return fmt.Sprintf("%v/IAuthenticationService/GenerateAccessTokenForApp/v1/", api.BaseURL)
 }
 
 type GenerateAccessTokenResponse struct {
@@ -385,7 +385,7 @@ func (c Client) GenerateAccessTokenForApp(refreshToken string, renew bool) (Gene
 		RenewalType:  renewalType,
 	}
 	var response GenerateAccessTokenResponse
-	sendErr := c.webClient.Send(request, &response)
+	sendErr := c.transport.Send(request, &response)
 	if sendErr != nil {
 		return GenerateAccessTokenResponse{}, sendErr
 	}

@@ -2,8 +2,8 @@
 
 import (
 	"fmt"
+	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/api/community"
-	"github.com/escrow-tf/steam/api/web"
 	"github.com/escrow-tf/steam/steamid"
 	"net/http"
 	"net/url"
@@ -52,12 +52,12 @@ type TradeOffer struct {
 }
 
 type Client struct {
-	webClient *web.Transport
+	transport *api.Transport
 }
 
-func NewClient(webApiKey string, webClient *web.Transport) Client {
+func NewClient(webApiKey string, transport *api.Transport) Client {
 	return Client{
-		webClient: webClient,
+		transport: transport,
 	}
 }
 
@@ -75,7 +75,7 @@ func (g GetTradeOfferRequest) Method() string {
 }
 
 func (g GetTradeOfferRequest) Url() string {
-	return fmt.Sprintf("%s/IEconService/GetTradeOffer/v1/", web.BaseURL)
+	return fmt.Sprintf("%s/IEconService/GetTradeOffer/v1/", api.BaseURL)
 }
 
 func (g GetTradeOfferRequest) Values() (url.Values, error) {
@@ -96,7 +96,7 @@ func (c *Client) GetTradeOffer(id uint64) (*GetTradeOfferResponse, error) {
 		language: "en_us",
 	}
 	var response GetTradeOfferResponse
-	sendErr := c.webClient.Send(request, &response)
+	sendErr := c.transport.Send(request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}
@@ -123,7 +123,7 @@ func (g GetTradeOffersRequest) Method() string {
 }
 
 func (g GetTradeOffersRequest) Url() string {
-	return fmt.Sprintf("%s/IEconService/GetTradeOffers/v1/", web.BaseURL)
+	return fmt.Sprintf("%s/IEconService/GetTradeOffers/v1/", api.BaseURL)
 }
 
 func (g GetTradeOffersRequest) Values() (url.Values, error) {
@@ -166,7 +166,7 @@ func (c *Client) GetTradeOffers(getSent, getReceived, getDescriptions, activeOnl
 		historicalCutoff: historicalCutoff,
 	}
 	var response GetTradeOffersResponse
-	sendErr := c.webClient.Send(request, &response)
+	sendErr := c.transport.Send(request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}
