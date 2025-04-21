@@ -59,7 +59,6 @@ func NewAccountState(accountName string, password string, sharedSecret string, i
 }
 
 func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, error) {
-	// same with grabbing hostname
 	deviceHostName, err := os.Hostname()
 	if err != nil {
 		return nil, fmt.Errorf("os.Hostname() failed: %v", err)
@@ -270,25 +269,3 @@ func (w *WebSession) MobileConfClient() *mobileconf.Client {
 func (w *WebSession) TradeOfferClient() *tradeoffer.Client {
 	return w.tradeOfferClient
 }
-
-/*
-In go:
-Authenticate(accountDetails AccountDetails) (ConfirmationSession, error)
- - encrypts password
- - sends StartSessionWithCredentials request
- - returns whether the authentication was successful, and confirmations required
-
-(a ConfirmationSession) Confirm(totpFunc TotpCodeFunc) (LoginSession, error)
- - if no confirmation is needed, then returns new LoginSession
- - if one is needed, but it's not DeviceCode or EmailCode, return UnsupportedConfirmationTypeError
- - otherwise, call totpFunc for an auth code and submit it with SubmitSteamGuardCode
- - attempt until success or timeout
-*/
-
-/*
-
-startWithCredentials takes an account name and a password,
-awaits startSessionWithCredentials (steam web api),
-then awaits _processStartSessionResponse until auth confirmation is complete or failed
-
-*/
