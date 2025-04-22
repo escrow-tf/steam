@@ -131,33 +131,3 @@ func (c Client) GetPlayerInventory(steamID steamid.SteamID, appID, contextID, la
 	}
 	return response, nil
 }
-
-//func (c client) GetPlayerInventory(steamID steamid.SteamID, appID, contextID, language string, count uint, start uint) (*PlayerInventory, error) {
-//	steamIdEncoded := url.QueryEscape(steamID.String())
-//	appIdEncoded := url.QueryEscape(appID)
-//	contextIdEncoded := url.QueryEscape(contextID)
-//	languageEncoded := url.QueryEscape(language)
-//	requestUrl := fmt.Sprintf("%s/inventory/%s/%s/%s?l=%s&count=%d&start=%d", BaseURL, steamIdEncoded, appIdEncoded, contextIdEncoded, languageEncoded, count, start)
-//
-//	httpResponse, err := http.Get(requestUrl)
-//	if err != nil {
-//		return nil, fmt.Errorf("error retrieving inventory: %v", err)
-//	}
-//
-//	if err = steamlang.EnsureSuccessResponse(httpResponse); err != nil {
-//		return nil, fmt.Errorf("inventory returned non-success status: %v", err)
-//	}
-//
-//	responseBody, err := io.ReadAll(httpResponse.Body)
-//	if err != nil {
-//		return nil, fmt.Errorf("error reading response body: %v", err)
-//	}
-//
-//	playerInventory := &PlayerInventory{}
-//	err = json.Unmarshal(responseBody, playerInventory)
-//	if err != nil {
-//		return nil, fmt.Errorf("error unmarshalling response body: %v", err)
-//	}
-//
-//	return playerInventory, nil
-//}

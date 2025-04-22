@@ -6,12 +6,13 @@ import (
 )
 
 func TestGenerateAuthCode(t *testing.T) {
+	//goland:noinspection SpellCheckingInspection
 	state, err := NewState("cnOgv/KdpLoP6Nbh0GMkXkPXALQ=", "")
 	if err != nil {
 		t.Error(err)
 	}
 
-	code, err := state.GenerateTotpCode("cnOgv/KdpLoP6Nbh0GMkXkPXALQ=", time.Now())
+	code, err := state.GenerateTotpCode("conf", time.Now())
 	if err != nil {
 		t.Error(err)
 	}

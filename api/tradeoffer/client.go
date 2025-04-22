@@ -68,8 +68,6 @@ type Item struct {
 	CurrencyId string `json:"currencyid,omitempty"`
 }
 
-// {\"appid\":440,\"contextid\":\"2\",\"amount\":1,\"assetid\":\"14819699629\"}
-
 func InitializeFormRequestHeaders(request *http.Request) {
 	request.Header.Add("Accept", "application/json")
 	request.Header.Add("User-Agent", "okhttp/3.12.12")
@@ -256,7 +254,7 @@ func (c Client) Create(sessionId string, other steamid.SteamID, partnerToken str
 	// 20	wrong contextid
 	// 25	can't send more offers until some is accepted/cancelled...
 	// 26	object is not in our inventory
-	// error code names are in internal/steamlang/enums.go EResult_name
+	// error code names are in steamlang/enums.go EResult_name
 	if response.Error != "" {
 		return CreateResponse{}, fmt.Errorf("error sending offer: %v", response.Error)
 	}

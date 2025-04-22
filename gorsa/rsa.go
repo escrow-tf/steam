@@ -22,26 +22,26 @@ type RSASecurity struct {
 	prikey *rsa.PrivateKey //私钥
 }
 
-// 设置公钥
+// SetPublicKey 设置公钥
 func (rsas *RSASecurity) SetPublicKey(pubStr string) (err error) {
 	rsas.pubStr = pubStr
 	rsas.pubkey, err = rsas.GetPublickey()
 	return err
 }
 
-// 设置私钥
+// SetPrivateKey 设置私钥
 func (rsas *RSASecurity) SetPrivateKey(priStr string) (err error) {
 	rsas.priStr = priStr
 	rsas.prikey, err = rsas.GetPrivatekey()
 	return err
 }
 
-// *rsa.PublicKey
+// GetPrivatekey *rsa.PublicKey
 func (rsas *RSASecurity) GetPrivatekey() (*rsa.PrivateKey, error) {
 	return getPriKey([]byte(rsas.priStr))
 }
 
-// *rsa.PrivateKey
+// GetPublickey *rsa.PrivateKey
 func (rsas *RSASecurity) GetPublickey() (*rsa.PublicKey, error) {
 	return getPubKey([]byte(rsas.pubStr))
 }
@@ -58,7 +58,7 @@ func EncryptPKCS1(input []byte, publicKey *rsa.PublicKey) ([]byte, error) {
 	return io.ReadAll(output)
 }
 
-// 公钥加密
+// PubKeyENCTYPT 公钥加密
 func (rsas *RSASecurity) PubKeyENCTYPT(input []byte) ([]byte, error) {
 	if rsas.pubkey == nil {
 		return []byte(""), errors.New(`please set the public key in advance`)
@@ -71,7 +71,7 @@ func (rsas *RSASecurity) PubKeyENCTYPT(input []byte) ([]byte, error) {
 	return io.ReadAll(output)
 }
 
-// 公钥解密
+// PubKeyDECRYPT 公钥解密
 func (rsas *RSASecurity) PubKeyDECRYPT(input []byte) ([]byte, error) {
 	if rsas.pubkey == nil {
 		return []byte(""), errors.New(`please set the public key in advance`)
@@ -84,7 +84,7 @@ func (rsas *RSASecurity) PubKeyDECRYPT(input []byte) ([]byte, error) {
 	return io.ReadAll(output)
 }
 
-// 私钥加密
+// PriKeyENCTYPT 私钥加密
 func (rsas *RSASecurity) PriKeyENCTYPT(input []byte) ([]byte, error) {
 	if rsas.prikey == nil {
 		return []byte(""), errors.New(`please set the private key in advance`)
@@ -97,10 +97,10 @@ func (rsas *RSASecurity) PriKeyENCTYPT(input []byte) ([]byte, error) {
 	return io.ReadAll(output)
 }
 
-// 私钥解密
+// PriKeyDECRYPT 私钥解密
 func (rsas *RSASecurity) PriKeyDECRYPT(input []byte) ([]byte, error) {
 	if rsas.prikey == nil {
-		return []byte(""), errors.New(`Please set the private key in advance`)
+		return []byte(""), errors.New(`please set the private key in advance`)
 	}
 	output := bytes.NewBuffer(nil)
 	err := priKeyIO(rsas.prikey, bytes.NewReader(input), output, false)
@@ -111,51 +111,43 @@ func (rsas *RSASecurity) PriKeyDECRYPT(input []byte) ([]byte, error) {
 	return io.ReadAll(output)
 }
 
-/**
- * 使用RSAWithMD5算法签名
- */
+// SignMd5WithRsa /**
 func (rsas *RSASecurity) SignMd5WithRsa(data string) (string, error) {
 	md5Hash := md5.New()
-	s_data := []byte(data)
-	md5Hash.Write(s_data)
+	sData := []byte(data)
+	md5Hash.Write(sData)
 	hashed := md5Hash.Sum(nil)
 
 	signByte, err := rsa.SignPKCS1v15(rand.Reader, rsas.prikey, crypto.MD5, hashed)
 	sign := base64.StdEncoding.EncodeToString(signByte)
-	return string(sign), err
+	return sign, err
 }
 
-/**
- * 使用RSAWithSHA1算法签名
- */
+// SignSha1WithRsa /**
 func (rsas *RSASecurity) SignSha1WithRsa(data string) (string, error) {
 	sha1Hash := sha1.New()
-	s_data := []byte(data)
-	sha1Hash.Write(s_data)
+	sData := []byte(data)
+	sha1Hash.Write(sData)
 	hashed := sha1Hash.Sum(nil)
 
 	signByte, err := rsa.SignPKCS1v15(rand.Reader, rsas.prikey, crypto.SHA1, hashed)
 	sign := base64.StdEncoding.EncodeToString(signByte)
-	return string(sign), err
+	return sign, err
 }
 
-/**
- * 使用RSAWithSHA256算法签名
- */
+// SignSha256WithRsa /**
 func (rsas *RSASecurity) SignSha256WithRsa(data string) (string, error) {
 	sha256Hash := sha256.New()
-	s_data := []byte(data)
-	sha256Hash.Write(s_data)
+	sData := []byte(data)
+	sha256Hash.Write(sData)
 	hashed := sha256Hash.Sum(nil)
 
 	signByte, err := rsa.SignPKCS1v15(rand.Reader, rsas.prikey, crypto.SHA256, hashed)
 	sign := base64.StdEncoding.EncodeToString(signByte)
-	return string(sign), err
+	return sign, err
 }
 
-/**
- * 使用RSAWithMD5验证签名
- */
+// VerifySignMd5WithRsa /**
 func (rsas *RSASecurity) VerifySignMd5WithRsa(data string, signData string) error {
 	sign, err := base64.StdEncoding.DecodeString(signData)
 	if err != nil {
@@ -166,9 +158,7 @@ func (rsas *RSASecurity) VerifySignMd5WithRsa(data string, signData string) erro
 	return rsa.VerifyPKCS1v15(rsas.pubkey, crypto.MD5, hash.Sum(nil), sign)
 }
 
-/**
- * 使用RSAWithSHA1验证签名
- */
+// VerifySignSha1WithRsa /**
 func (rsas *RSASecurity) VerifySignSha1WithRsa(data string, signData string) error {
 	sign, err := base64.StdEncoding.DecodeString(signData)
 	if err != nil {
@@ -179,9 +169,7 @@ func (rsas *RSASecurity) VerifySignSha1WithRsa(data string, signData string) err
 	return rsa.VerifyPKCS1v15(rsas.pubkey, crypto.SHA1, hash.Sum(nil), sign)
 }
 
-/**
- * 使用RSAWithSHA256验证签名
- */
+// VerifySignSha256WithRsa /**
 func (rsas *RSASecurity) VerifySignSha256WithRsa(data string, signData string) error {
 	sign, err := base64.StdEncoding.DecodeString(signData)
 	if err != nil {

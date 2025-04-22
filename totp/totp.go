@@ -58,6 +58,7 @@ func (s State) GenerateTotpCode(tag string, time time.Time) (string, error) {
 	fullCode := int(fc32)
 
 	// Range of possible chars for auth code.
+	//goland:noinspection SpellCheckingInspection
 	var chars = "23456789BCDFGHJKMNPQRTVWXY"
 	var charsLen = len(chars)
 
