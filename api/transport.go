@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"reflect"
 	"strings"
 )
 
@@ -124,10 +123,10 @@ func (c Transport) CookieJar() http.CookieJar {
 
 // Send sends a specialized HTTP Request to steam.
 func (c Transport) Send(request SteamRequest, response any) error {
-	rv := reflect.ValueOf(response)
-	if !rv.IsNil() && rv.Kind() != reflect.Pointer || rv.IsNil() {
-		return fmt.Errorf("response type must be a pointer when not nil")
-	}
+	//rv := reflect.ValueOf(response)
+	//if rv.!(rv.IsZero() || rv.IsNil()) && rv.Kind() != reflect.Pointer {
+	//	return fmt.Errorf("response type must be a pointer when not nil")
+	//}
 
 	httpMethod := request.Method()
 

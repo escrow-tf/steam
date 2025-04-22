@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/escrow-tf/steam/api"
+	"github.com/escrow-tf/steam/api/twofactor"
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/steamlang"
 	"github.com/escrow-tf/steam/totp"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 type ConfirmationType int
@@ -27,42 +29,17 @@ type Client struct {
 	totpState *totp.State
 	steamID   steamid.SteamID
 	client    *http.Client
+	twoFactor *twofactor.Client
+	transport *api.Transport
 }
 
-func NewClient(totpState *totp.State, steamID steamid.SteamID, transport *api.Transport) (*Client, error) {
-	//jar, err := cookiejar.New(nil)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//baseUrl, err := url.Parse("https://steamcommunity.com/")
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//jar.SetCookies(baseUrl, []*http.Cookie{
-	//	&http.Cookie{
-	//		Name:  "sessionid",
-	//		Value: url.QueryEscape(sessionId),
-	//	},
-	//	&http.Cookie{
-	//		Name:  "steamLogin",
-	//		Value: steamLogin,
-	//	},
-	//	&http.Cookie{
-	//		Name:  "steamLoginSecure",
-	//		Value: steamLoginSecure,
-	//	},
-	//})
-	//
-	//client := &http.client{
-	//	Jar: jar,
-	//}
-
+func NewClient(totpState *totp.State, steamID steamid.SteamID, twoFactorClient *twofactor.Client, transport *api.Transport) (*Client, error) {
 	return &Client{
 		totpState: totpState,
 		steamID:   steamID,
 		client:    transport.HttpClient(),
+		twoFactor: twoFactorClient,
+		transport: transport,
 	}, nil
 }
 
@@ -77,23 +54,71 @@ type Request struct {
 	Posts     bool
 	Path      string
 	Tag       string
+
+	key      []byte
+	steamID  steamid.SteamID
+	totpTime time.Time
+}
+
+func (r Request) Retryable() bool {
+	return !r.Posts
+}
+
+func (r Request) RequiresApiKey() bool {
+	return false
+}
+
+func (r Request) Method() string {
+	if r.Posts {
+		return http.MethodPost
+	}
+
+	return http.MethodGet
+}
+
+func (r Request) Url() string {
+	return fmt.Sprintf("https://steamcommunity.com/mobileconf/%s", r.Path)
+}
+
+func (r Request) Values() (url.Values, error) {
+	parameters := make(url.Values)
+
+	parameters.Add("k", base64.StdEncoding.EncodeToString(r.key))
+	parameters.Add("p", totp.GetDeviceId(r.steamID.String()))
+	parameters.Add("c", r.steamID.String())
+	parameters.Add("t", strconv.Itoa(int(r.totpTime.Unix())))
+	parameters.Add("tag", r.Tag)
+	parameters.Add("m", "react")
+
+	if r.Operation != nil {
+		parameters.Add("op", r.Operation.Operation)
+		parameters.Add("cid", r.Operation.ID)
+		parameters.Add("ck", r.Operation.Nonce)
+	}
+
+	return parameters, nil
 }
 
 func (c Client) SendMobileConfRequest(request Request, response any) error {
-	totpTime := totp.Time(0)
+	// totpTime := totp.Time(0)
+	totpTime, steamTimeErr := c.twoFactor.SteamTime()
+	if steamTimeErr != nil {
+		return steamTimeErr
+	}
+
 	key, err := c.totpState.GenerateConfirmationKey(totpTime, []byte(request.Tag))
 	if err != nil {
 		return fmt.Errorf("totpState.GenerateConfirmationKey: %v", err)
 	}
 
 	parameters := make(url.Values)
-
-	parameters.Add("k", base64.StdEncoding.EncodeToString(key))
 	parameters.Add("p", totp.GetDeviceId(c.steamID.String()))
-	parameters.Add("c", c.steamID.String())
-	parameters.Add("t", strconv.Itoa(int(totpTime.Unix())))
-	parameters.Add("tag", request.Tag)
+	parameters.Add("a", c.steamID.String())
+	parameters.Add("k", base64.StdEncoding.EncodeToString(key))
+	// parameters.Add("c", c.steamID.String())
+	parameters.Add("t", strconv.Itoa(int(totpTime.Unix()))) // TODO: unix or local?
 	parameters.Add("m", "react")
+	parameters.Add("tag", request.Tag)
 
 	if request.Operation != nil {
 		parameters.Add("op", request.Operation.Operation)
@@ -159,7 +184,7 @@ func (c Client) GetList() (GetListResponse, error) {
 	request := Request{
 		Posts:     false,
 		Path:      "getlist",
-		Tag:       "list",
+		Tag:       "conf",
 		Operation: nil,
 	}
 

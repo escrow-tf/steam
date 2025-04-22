@@ -8,6 +8,7 @@ import (
 	"github.com/escrow-tf/steam/api/auth"
 	"github.com/escrow-tf/steam/api/mobileconf"
 	"github.com/escrow-tf/steam/api/tradeoffer"
+	"github.com/escrow-tf/steam/api/twofactor"
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/totp"
 	"github.com/golang-jwt/jwt/v5"
@@ -35,6 +36,7 @@ type WebSession struct {
 	authClient       *auth.Client
 	mobileConfClient *mobileconf.Client
 	tradeOfferClient *tradeoffer.Client
+	twoFactorClient  *twofactor.Client
 
 	clientId        string
 	requestId       string
@@ -66,6 +68,12 @@ func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, e
 
 	webTransport := api.NewTransport(webApiKey)
 	authClient := auth.NewClient(webTransport)
+	twoFactorClient := twofactor.NewClient(webTransport)
+
+	alignErr := twoFactorClient.AlignTime()
+	if alignErr != nil {
+		return nil, fmt.Errorf("twoFactorClient.AlignTime() failed: %v", alignErr)
+	}
 
 	encryptedPassword, err := authClient.EncryptAccountPassword(accountState.accountName, accountState.password)
 	if err != nil {
@@ -120,7 +128,7 @@ func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, e
 		return nil, fmt.Errorf("error submitting totp code: %v", err)
 	}
 
-	mobileConfClient, err := mobileconf.NewClient(accountState.totpState, steamID, webTransport)
+	mobileConfClient, err := mobileconf.NewClient(accountState.totpState, steamID, twoFactorClient, webTransport)
 	if err != nil {
 		return nil, fmt.Errorf("mobileconf.NewTransport failed: %v", err)
 	}
@@ -133,6 +141,7 @@ func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, e
 		authClient:       authClient,
 		mobileConfClient: mobileConfClient,
 		tradeOfferClient: tradeOfferClient,
+		twoFactorClient:  twoFactorClient,
 		clientId:         sessionResponse.Response.ClientId,
 		requestId:        sessionResponse.Response.RequestId,
 		steamId:          steamID,
