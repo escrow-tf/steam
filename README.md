@@ -10,4 +10,4 @@ This library implements:
 - [x] Retrieving Econ Inventories
 - [x] Retrieving TF2 Player Inventories
 - [x] Trade Offer Operations (GetOffer, GetOffers, Create, Accept, Decline, Cancel)
-- [ ] Mobile Confirmations
+- [x] Mobile Confirmations
