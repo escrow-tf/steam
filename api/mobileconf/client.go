@@ -194,6 +194,10 @@ func (c Client) GetList() (GetListResponse, error) {
 		return GetListResponse{}, fmt.Errorf("getlist mobile conf request failed: %v", err)
 	}
 
+	if !response.Success {
+		return GetListResponse{}, fmt.Errorf("getlist mobile conf request failed: %v", response.Message)
+	}
+
 	return response, nil
 }
 
@@ -227,11 +231,11 @@ type AcceptResponse struct {
 
 func (c Client) Accept(id, nonce string) (AcceptResponse, error) {
 	request := Request{
-		Posts: true,
-		Path:  "multiajaxop",
+		Posts: false,
+		Path:  "ajaxop",
 		Tag:   "accept",
 		Operation: &Operation{
-			Operation: "accept",
+			Operation: "allow",
 			ID:        id,
 			Nonce:     nonce,
 		},
@@ -241,6 +245,10 @@ func (c Client) Accept(id, nonce string) (AcceptResponse, error) {
 	err := c.SendMobileConfRequest(request, &response)
 	if err != nil {
 		return AcceptResponse{}, fmt.Errorf("accept mobile conf request failed: %v", err)
+	}
+
+	if !response.Success {
+		return AcceptResponse{}, fmt.Errorf("accept mobile conf request failed: %v", response.Message)
 	}
 
 	return response, nil
@@ -255,9 +263,9 @@ type DeclineResponse struct {
 
 func (c Client) Decline(id, nonce string) (DeclineResponse, error) {
 	request := Request{
-		Posts: true,
-		Path:  "multiajaxop",
-		Tag:   "cancel",
+		Posts: false,
+		Path:  "ajaxop",
+		Tag:   "reject",
 		Operation: &Operation{
 			Operation: "cancel",
 			ID:        id,
