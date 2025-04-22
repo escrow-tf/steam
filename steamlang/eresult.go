@@ -149,12 +149,15 @@ func EnsureSuccessResponse(response *http.Response) error {
 
 func EnsureEResultResponse(httpResponse *http.Response) error {
 	eResult := InvalidResult
-	if eResults, hasEResult := httpResponse.Header["X-Eresult"]; hasEResult {
-		for _, result := range eResults {
-			if parsedResult, parseErr := strconv.ParseInt(result, 10, 64); parseErr == nil {
-				eResult = EResult(parsedResult)
-				break
-			}
+	eResults, hasEResult := httpResponse.Header["X-Eresult"]
+	if !hasEResult {
+		return nil
+	}
+
+	for _, result := range eResults {
+		if parsedResult, parseErr := strconv.ParseInt(result, 10, 64); parseErr == nil {
+			eResult = EResult(parsedResult)
+			break
 		}
 	}
 
