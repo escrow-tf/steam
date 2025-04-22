@@ -1,10 +1,9 @@
 ﻿package tf2econ
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
-	"github.com/escrow-tf/steam/steamlang"
 	"github.com/hashicorp/go-retryablehttp"
 	"io"
 	"log"
@@ -15,15 +14,39 @@ import (
 const WebApiBaseUrl = "https://api.steampowered.com"
 
 type Client struct {
-	webApiKey string
-	client    *retryablehttp.Client
+	transport *api.Transport
 }
 
-func NewClient(webApiKey string) *Client {
+func NewClient(transport *api.Transport) *Client {
 	return &Client{
-		webApiKey: webApiKey,
-		client:    retryablehttp.NewClient(),
+		transport: transport,
 	}
+}
+
+type PlayerItemsRequest struct {
+	steamId steamid.SteamID
+}
+
+func (p PlayerItemsRequest) Retryable() bool {
+	return true
+}
+
+func (p PlayerItemsRequest) RequiresApiKey() bool {
+	return true
+}
+
+func (p PlayerItemsRequest) Method() string {
+	return http.MethodGet
+}
+
+func (p PlayerItemsRequest) Url() string {
+	return fmt.Sprintf("%s/IEconItems_440/GetPlayerItems/v1/", WebApiBaseUrl)
+}
+
+func (p PlayerItemsRequest) Values() (url.Values, error) {
+	return url.Values{
+		"steamid": []string{p.steamId.String()},
+	}, nil
 }
 
 type PlayerItemsResponse struct {
@@ -78,36 +101,13 @@ func InitializeRequestHeaders(request *retryablehttp.Request) {
 }
 
 func (client *Client) GetPlayerItems(steamId steamid.SteamID) (*PlayerItemsResponse, error) {
-	encodedSteamId := url.QueryEscape(steamId.String())
-	requestUrl := fmt.Sprintf("%s/IEconItems_440/GetPlayerItems/v1/?key=%s&steamid=%s", WebApiBaseUrl, client.webApiKey, encodedSteamId)
-	request, err := retryablehttp.NewRequest(http.MethodGet, requestUrl, nil)
-	if err != nil {
-		return nil, err
+	request := PlayerItemsRequest{
+		steamId: steamId,
 	}
-
-	InitializeRequestHeaders(request)
-
-	httpResponse, err := client.client.Do(request)
-	if err != nil {
-		return nil, fmt.Errorf("error on GET IEconItems_440/GetPlayerItems/v1/: %v", err)
+	var response PlayerItemsResponse
+	sendErr := client.transport.Send(request, &response)
+	if sendErr != nil {
+		return nil, sendErr
 	}
-
-	if err = steamlang.EnsureSuccessResponse(httpResponse); err != nil {
-		return nil, fmt.Errorf("non-success status code on GET IEconItems_440/GetPlayerItems/v1/: %v", err)
-	}
-
-	defer closeBody(httpResponse.Body)
-
-	responseBody, err := io.ReadAll(httpResponse.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading body in response from IEconItems_440/GetPlayerItems/v1/: %v", err)
-	}
-
-	playerItems := &PlayerItemsResponse{}
-	err = json.Unmarshal(responseBody, playerItems)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling PlayerItemsResponse: %v", err)
-	}
-
-	return playerItems, nil
+	return &response, nil
 }
