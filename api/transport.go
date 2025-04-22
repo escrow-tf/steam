@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"reflect"
 	"strings"
 )
 
@@ -71,6 +72,7 @@ type DeviceDetails struct {
 const BaseURL = "https://api.steampowered.com"
 
 type SteamRequest interface {
+	Retryable() bool
 	RequiresApiKey() bool
 	Method() string
 	Url() string
@@ -122,6 +124,11 @@ func (c Transport) CookieJar() http.CookieJar {
 
 // Send sends a specialized HTTP Request to steam.
 func (c Transport) Send(request SteamRequest, response any) error {
+	rv := reflect.ValueOf(response)
+	if !rv.IsNil() && rv.Kind() != reflect.Pointer || rv.IsNil() {
+		return fmt.Errorf("response type must be a pointer when not nil")
+	}
+
 	httpMethod := request.Method()
 
 	values, valuesErr := request.Values()
@@ -161,7 +168,12 @@ func (c Transport) Send(request SteamRequest, response any) error {
 		httpRequest.Header.Add("Content-Type", FormContentType)
 	}
 
-	httpResponse, httpResponseErr := c.client.Do(httpRequest)
+	httpClient := c.client
+	if request.Retryable() {
+		httpClient = c.retryClient.StandardClient()
+	}
+
+	httpResponse, httpResponseErr := httpClient.Do(httpRequest)
 	if httpResponseErr != nil {
 		return fmt.Errorf("request to Steam failed: %v", httpResponseErr)
 	}

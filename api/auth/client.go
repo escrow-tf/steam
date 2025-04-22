@@ -18,6 +18,10 @@ type GetRsaKeyRequest struct {
 	accountName string
 }
 
+func (g GetRsaKeyRequest) Retryable() bool {
+	return true
+}
+
 func (g GetRsaKeyRequest) RequiresApiKey() bool {
 	return false
 }
@@ -177,6 +181,10 @@ type StartSessionRequest struct {
 	QosLevel            int
 }
 
+func (r StartSessionRequest) Retryable() bool {
+	return false
+}
+
 func (r StartSessionRequest) RequiresApiKey() bool {
 	return false
 }
@@ -247,6 +255,10 @@ type UpdateSessionWithSteamGuardCodeRequest struct {
 	CodeType GuardType
 }
 
+func (r UpdateSessionWithSteamGuardCodeRequest) Retryable() bool {
+	return false
+}
+
 func (r UpdateSessionWithSteamGuardCodeRequest) RequiresApiKey() bool {
 	return false
 }
@@ -290,6 +302,10 @@ func (c Client) SubmitSteamGuardCode(clientID string, steamID steamid.SteamID, c
 type PollSessionStatusRequest struct {
 	ClientID  string
 	RequestID string
+}
+
+func (r PollSessionStatusRequest) Retryable() bool {
+	return false
 }
 
 func (r PollSessionStatusRequest) RequiresApiKey() bool {
@@ -339,6 +355,10 @@ type GenerateAccessTokenRequest struct {
 	RefreshToken string           `json:"refresh_token"`
 	SteamID      string           `json:"steamid"`
 	RenewalType  TokenRenewalType `json:"renewal_type"`
+}
+
+func (r GenerateAccessTokenRequest) Retryable() bool {
+	return false
 }
 
 func (r GenerateAccessTokenRequest) RequiresApiKey() bool {

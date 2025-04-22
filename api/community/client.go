@@ -28,6 +28,10 @@ type PlayerInventoryRequest struct {
 	start     uint
 }
 
+func (p PlayerInventoryRequest) Retryable() bool {
+	return true
+}
+
 func (p PlayerInventoryRequest) RequiresApiKey() bool {
 	return false
 }

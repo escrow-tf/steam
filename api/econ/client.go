@@ -66,6 +66,10 @@ type GetTradeOfferRequest struct {
 	language string
 }
 
+func (g GetTradeOfferRequest) Retryable() bool {
+	return true
+}
+
 func (g GetTradeOfferRequest) RequiresApiKey() bool {
 	return true
 }
@@ -112,6 +116,10 @@ type GetTradeOffersRequest struct {
 	historicalOnly   bool
 	historicalCutoff uint32
 	language         string
+}
+
+func (g GetTradeOffersRequest) Retryable() bool {
+	return true
 }
 
 func (g GetTradeOffersRequest) RequiresApiKey() bool {
