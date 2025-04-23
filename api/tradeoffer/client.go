@@ -5,46 +5,95 @@ import (
 	"fmt"
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
-	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 )
 
+type SessionIdFunc func(transport *api.Transport) (string, error)
+
 type Client struct {
-	client *http.Client
+	transport     *api.Transport
+	sessionIdFunc SessionIdFunc
 }
 
-func NewClient(transport *api.Transport) *Client {
+func NewClient(transport *api.Transport, sessionIdFunc SessionIdFunc) *Client {
 	return &Client{
-		client: transport.HttpClient(),
+		transport:     transport,
+		sessionIdFunc: sessionIdFunc,
 	}
+}
+
+type ActionResponse struct {
+	TradeOfferId uint64 `json:"tradeofferid,string"`
+}
+
+type ActionRequest struct {
+	id        uint64
+	verb      string
+	sessionId string
+}
+
+func (t ActionRequest) Retryable() bool {
+	return false
+}
+
+func (t ActionRequest) RequiresApiKey() bool {
+	return false
+}
+
+func (t ActionRequest) Method() string {
+	return http.MethodPost
+}
+
+func (t ActionRequest) Url() string {
+	return fmt.Sprintf("https://steamcommunity.com/tradeoffer/%d/%s", t.id, t.verb)
+}
+
+func (t ActionRequest) Values() (url.Values, error) {
+	return url.Values{
+		"sessionid": []string{t.sessionId},
+	}, nil
+}
+
+func (t ActionRequest) Headers() (http.Header, error) {
+	// TODO: do we need referer when acting on a request?
+	return nil, nil
+}
+
+func (c *Client) act(id uint64, verb string) (*ActionResponse, error) {
+	sessionId, sessionIdErr := c.sessionIdFunc(c.transport)
+	if sessionIdErr != nil {
+		return nil, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
+	}
+
+	request := ActionRequest{
+		id:        id,
+		verb:      verb,
+		sessionId: sessionId,
+	}
+	var response ActionResponse
+	sendErr := c.transport.Send(request, &response)
+	if sendErr != nil {
+		return nil, sendErr
+	}
+	return &response, nil
+}
+
+func (c *Client) Accept(id uint64) (*ActionResponse, error) {
+	return c.act(id, "accept")
+}
+
+func (c *Client) Decline(id uint64) (*ActionResponse, error) {
+	return c.act(id, "decline")
+}
+
+func (c *Client) Cancel(id uint64) (*ActionResponse, error) {
+	return c.act(id, "cancel")
 }
 
 type CreateParams struct {
 	AccessToken string `json:"trade_offer_access_token"`
-}
-
-type OfferData struct {
-	SessionId        string `json:"sessionid"`
-	ServerId         string `json:"serverid"`
-	Partner          string `json:"partner"`
-	Message          string `json:"tradeoffermessage"`
-	OfferJson        string `json:"json_tradeoffer"`
-	CreateParamsJson string `json:"trade_offer_create_params"`
-}
-
-func (o OfferData) GetValues() (url.Values, error) {
-	values := make(url.Values)
-	values.Add("sessionid", o.SessionId)
-	values.Add("serverid", o.ServerId)
-	values.Add("partner", o.Partner)
-	values.Add("tradeoffermessage", o.Message)
-	values.Add("json_tradeoffer", o.OfferJson)
-	values.Add("trade_offer_create_params", o.CreateParamsJson)
-	return values, nil
 }
 
 type Offer struct {
@@ -68,105 +117,51 @@ type Item struct {
 	CurrencyId string `json:"currencyid,omitempty"`
 }
 
-func InitializeFormRequestHeaders(request *http.Request) {
-	request.Header.Add("Accept", "application/json")
-	request.Header.Add("User-Agent", "okhttp/3.12.12")
-	request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+type CreateRequest struct {
+	SessionId        string
+	ServerId         string
+	Partner          string
+	Message          string
+	OfferJson        string
+	CreateParamsJson string
+	PartnerAccountId int
+	PartnerToken     string
 }
 
-type ActionResponse struct {
-	TradeOfferId uint64 `json:"tradeofferid,string"`
+func (c CreateRequest) Retryable() bool {
+	return false
 }
 
-func (c Client) act(sessionId string, id uint64, verb string) (ActionResponse, error) {
-	requestUrl := fmt.Sprintf("https://steamcommunity.com/tradeoffer/%d/%s", id, verb)
-
-	encodedSessionId := url.QueryEscape(sessionId)
-	body := fmt.Sprintf("sessionid=%s", encodedSessionId)
-	httpRequest, err := http.NewRequest(http.MethodPost, requestUrl, strings.NewReader(body))
-	if err != nil {
-		return ActionResponse{}, fmt.Errorf("error creating request: %v", err)
-	}
-
-	InitializeFormRequestHeaders(httpRequest)
-
-	// TODO: do we need referrer?
-
-	httpResponse, err := c.client.Do(httpRequest)
-	if err != nil {
-		return ActionResponse{}, fmt.Errorf("error sending request: %v", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Printf("error closing body: %v", err)
-		}
-	}(httpResponse.Body)
-
-	response := ActionResponse{}
-	if err = json.NewDecoder(httpResponse.Body).Decode(&response); err != nil {
-		return ActionResponse{}, fmt.Errorf("error decoding response: %v", err)
-	}
-
-	if response.TradeOfferId == 0 {
-		return ActionResponse{}, fmt.Errorf("error creating offer: steam returned tradeofferid 0")
-	}
-
-	if httpResponse.StatusCode != http.StatusOK {
-		return ActionResponse{}, fmt.Errorf("error sending request: %d %s", httpResponse.StatusCode, httpResponse.Status)
-	}
-
-	return response, nil
+func (c CreateRequest) RequiresApiKey() bool {
+	return false
 }
 
-func (c Client) Accept(sessionId string, id uint64) (ActionResponse, error) {
-	return c.act(sessionId, id, "accept")
+func (c CreateRequest) Method() string {
+	return http.MethodPost
 }
 
-func (c Client) Decline(sessionId string, id uint64) (ActionResponse, error) {
-	return c.act(sessionId, id, "decline")
+func (c CreateRequest) Url() string {
+	return "https://steamcommunity.com/tradeoffer/new/send"
 }
 
-func (c Client) Cancel(sessionId string, id uint64) (ActionResponse, error) {
-	return c.act(sessionId, id, "cancel")
-	//requestUrl := fmt.Sprintf("https://steamcommunity.com/tradeoffer/%d/cancel", id)
-	//
-	//encodedSessionId := url.QueryEscape(sessionId)
-	//body := fmt.Sprintf("sessionid=%s", encodedSessionId)
-	//httpRequest, err := http.NewRequest(http.MethodPost, requestUrl, strings.NewReader(body))
-	//if err != nil {
-	//	return ActionResponse{}, fmt.Errorf("error creating request: %v", err)
-	//}
-	//
-	//InitializeFormRequestHeaders(httpRequest)
-	//
-	//// TODO: do we need referrer?
-	//
-	//httpResponse, err := c.client.Do(httpRequest)
-	//if err != nil {
-	//	return ActionResponse{}, fmt.Errorf("error sending request: %v", err)
-	//}
-	//defer func(Body io.ReadCloser) {
-	//	err := Body.Close()
-	//	if err != nil {
-	//		log.Printf("error closing body: %v", err)
-	//	}
-	//}(httpResponse.Body)
-	//
-	//response := ActionResponse{}
-	//if err = json.NewDecoder(httpResponse.Body).Decode(&response); err != nil {
-	//	return ActionResponse{}, fmt.Errorf("error decoding response: %v", err)
-	//}
-	//
-	//if response.TradeOfferId == 0 {
-	//	return ActionResponse{}, fmt.Errorf("error creating offer: steam returned tradeofferid 0")
-	//}
-	//
-	//if httpResponse.StatusCode != http.StatusOK {
-	//	return ActionResponse{}, fmt.Errorf("error sending request: %d %s", httpResponse.StatusCode, httpResponse.Status)
-	//}
-	//
-	//return response, nil
+func (c CreateRequest) Values() (url.Values, error) {
+	values := make(url.Values)
+	values.Add("sessionid", c.SessionId)
+	values.Add("serverid", c.ServerId)
+	values.Add("partner", c.Partner)
+	values.Add("tradeoffermessage", c.Message)
+	values.Add("json_tradeoffer", c.OfferJson)
+	values.Add("trade_offer_create_params", c.CreateParamsJson)
+	return values, nil
+}
+
+func (c CreateRequest) Headers() (http.Header, error) {
+	encodedPartnerAccountId := strconv.Itoa(c.PartnerAccountId)
+	encodedPartnerToken := url.QueryEscape(c.PartnerToken)
+	referer := fmt.Sprintf("https://steamcommunity.com/tradeoffer/new/?partner=%s&token=%s", encodedPartnerAccountId, encodedPartnerToken)
+	return http.Header{
+		"Referer": []string{referer},
+	}, nil
 }
 
 type CreateResponse struct {
@@ -174,7 +169,7 @@ type CreateResponse struct {
 	TradeOfferId uint64 `json:"tradeOfferId,string"`
 }
 
-func (c Client) Create(sessionId string, other steamid.SteamID, partnerToken string, myItems, theirItems []Item, message string) (CreateResponse, error) {
+func (c *Client) Create(sessionId string, other steamid.SteamID, partnerToken string, myItems, theirItems []Item, message string) (CreateResponse, error) {
 	offer := Offer{
 		NewVersion: true,
 		Version:    3,
@@ -204,48 +199,20 @@ func (c Client) Create(sessionId string, other steamid.SteamID, partnerToken str
 		return CreateResponse{}, fmt.Errorf("error marshalling CreateParams: %v", err)
 	}
 
-	offerData := OfferData{
+	request := CreateRequest{
 		SessionId:        sessionId,
 		ServerId:         "1",
 		Partner:          other.String(),
 		Message:          message,
 		OfferJson:        string(offerJson),
 		CreateParamsJson: string(createParamsJson),
-		// CreateParamsJson: "{}",
+		PartnerAccountId: other.AccountId(),
+		PartnerToken:     partnerToken,
 	}
-
-	values, err := offerData.GetValues()
-	if err != nil {
-		return CreateResponse{}, fmt.Errorf("couldn't get values from StartSessionRequest: %v", err)
-	}
-
-	body := values.Encode()
-	httpRequest, err := http.NewRequest(http.MethodPost, "https://steamcommunity.com/tradeoffer/new/send", strings.NewReader(body))
-	if err != nil {
-		return CreateResponse{}, fmt.Errorf("error creating request: %v", err)
-	}
-
-	InitializeFormRequestHeaders(httpRequest)
-
-	encodedPartnerAccountId := strconv.Itoa(other.AccountId())
-	encodedPartnerToken := url.QueryEscape(partnerToken)
-	referer := fmt.Sprintf("https://steamcommunity.com/tradeoffer/new/?partner=%s&token=%s", encodedPartnerAccountId, encodedPartnerToken)
-	httpRequest.Header.Add("Referer", referer)
-
-	httpResponse, err := c.client.Do(httpRequest)
-	if err != nil {
-		return CreateResponse{}, fmt.Errorf("error sending request: %v", err)
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Printf("error closing body: %v", err)
-		}
-	}(httpResponse.Body)
-
-	response := CreateResponse{}
-	if err = json.NewDecoder(httpResponse.Body).Decode(&response); err != nil {
-		return CreateResponse{}, fmt.Errorf("error decoding response: %v", err)
+	var response CreateResponse
+	sendErr := c.transport.Send(request, &response)
+	if sendErr != nil {
+		return CreateResponse{}, fmt.Errorf("error creating new Offer: %v", sendErr)
 	}
 
 	// Error code descriptions:
@@ -261,10 +228,6 @@ func (c Client) Create(sessionId string, other steamid.SteamID, partnerToken str
 
 	if response.TradeOfferId == 0 {
 		return CreateResponse{}, fmt.Errorf("error creating offer: steam returned tradeofferid 0")
-	}
-
-	if httpResponse.StatusCode != http.StatusOK {
-		return CreateResponse{}, fmt.Errorf("error sending request: %d %s", httpResponse.StatusCode, httpResponse.Status)
 	}
 
 	return response, nil

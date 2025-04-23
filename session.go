@@ -135,7 +135,7 @@ func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, e
 		return nil, fmt.Errorf("mobileconf.NewTransport failed: %v", err)
 	}
 
-	tradeOfferClient := tradeoffer.NewClient(webTransport)
+	tradeOfferClient := tradeoffer.NewClient(webTransport, getSessionIdFromTransport)
 	communityClient := community.NewClient(webTransport)
 
 	webSession := &WebSession{
@@ -263,9 +263,9 @@ func (w *WebSession) SteamId() steamid.SteamID {
 	return w.steamId
 }
 
-func (w *WebSession) SessionId() (string, error) {
+func getSessionIdFromTransport(transport *api.Transport) (string, error) {
 	steamUrl := &url.URL{Scheme: "https", Host: "steamcommunity.com", Path: "/"}
-	steamCookies := w.transport.CookieJar().Cookies(steamUrl)
+	steamCookies := transport.CookieJar().Cookies(steamUrl)
 	for _, cookie := range steamCookies {
 		if strings.ToLower(cookie.Name) == "sessionid" {
 			return cookie.Value, nil
@@ -273,6 +273,10 @@ func (w *WebSession) SessionId() (string, error) {
 	}
 
 	return "", fmt.Errorf("could not find sessionid cookie")
+}
+
+func (w *WebSession) SessionId() (string, error) {
+	return getSessionIdFromTransport(w.transport)
 }
 
 func (w *WebSession) MobileConfClient() *mobileconf.Client {
