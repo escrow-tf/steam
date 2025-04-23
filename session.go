@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/api/auth"
+	"github.com/escrow-tf/steam/api/community"
 	"github.com/escrow-tf/steam/api/mobileconf"
 	"github.com/escrow-tf/steam/api/tradeoffer"
 	"github.com/escrow-tf/steam/api/twofactor"
@@ -37,6 +38,7 @@ type WebSession struct {
 	mobileConfClient *mobileconf.Client
 	tradeOfferClient *tradeoffer.Client
 	twoFactorClient  *twofactor.Client
+	communityClient  *community.Client
 
 	clientId        string
 	requestId       string
@@ -134,6 +136,7 @@ func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, e
 	}
 
 	tradeOfferClient := tradeoffer.NewClient(webTransport)
+	communityClient := community.NewClient(webTransport)
 
 	webSession := &WebSession{
 		state:            accountState,
@@ -142,6 +145,7 @@ func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, e
 		mobileConfClient: mobileConfClient,
 		tradeOfferClient: tradeOfferClient,
 		twoFactorClient:  twoFactorClient,
+		communityClient:  communityClient,
 		clientId:         sessionResponse.Response.ClientId,
 		requestId:        sessionResponse.Response.RequestId,
 		steamId:          steamID,
