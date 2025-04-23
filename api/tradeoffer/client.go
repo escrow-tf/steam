@@ -169,7 +169,12 @@ type CreateResponse struct {
 	TradeOfferId uint64 `json:"tradeOfferId,string"`
 }
 
-func (c *Client) Create(sessionId string, other steamid.SteamID, partnerToken string, myItems, theirItems []Item, message string) (CreateResponse, error) {
+func (c *Client) Create(other steamid.SteamID, partnerToken string, myItems, theirItems []Item, message string) (CreateResponse, error) {
+	sessionId, sessionIdErr := c.sessionIdFunc(c.transport)
+	if sessionIdErr != nil {
+		return CreateResponse{}, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
+	}
+
 	offer := Offer{
 		NewVersion: true,
 		Version:    3,
