@@ -282,3 +282,7 @@ func (w *WebSession) MobileConfClient() *mobileconf.Client {
 func (w *WebSession) TradeOfferClient() *tradeoffer.Client {
 	return w.tradeOfferClient
 }
+
+func (w *WebSession) CommunityClient() *community.Client {
+	return w.communityClient
+}
