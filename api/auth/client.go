@@ -79,17 +79,13 @@ func (r GetRsaKeyResponse) PublicKey() (PublicRsaKey, error) {
 }
 
 type Client struct {
-	transport *api.Transport
-}
-
-func NewClient(transport *api.Transport) *Client {
-	return &Client{transport}
+	Transport *api.Transport
 }
 
 func (c Client) GetPublicRsaKey(accountName string) (PublicRsaKey, error) {
 	request := GetRsaKeyRequest{accountName: accountName}
 	var response GetRsaKeyResponse
-	sendErr := c.transport.Send(request, &response)
+	sendErr := c.Transport.Send(request, &response)
 	if sendErr != nil {
 		return PublicRsaKey{}, sendErr
 	}
@@ -248,7 +244,7 @@ func (c Client) StartSessionWithCredentials(accountName string, password Encrypt
 		QosLevel:            2,
 	}
 	var response StartSessionResponse
-	sendErr := c.transport.Send(request, &response)
+	sendErr := c.Transport.Send(request, &response)
 	if sendErr != nil {
 		return StartSessionResponse{}, sendErr
 	}
@@ -303,7 +299,7 @@ func (c Client) SubmitSteamGuardCode(clientID string, steamID steamid.SteamID, c
 		Code:     code,
 		CodeType: DeviceCodeGuardType,
 	}
-	sendErr := c.transport.Send(request, nil)
+	sendErr := c.Transport.Send(request, nil)
 	if sendErr != nil {
 		return sendErr
 	}
@@ -360,7 +356,7 @@ func (c Client) PollSessionStatus(clientID string, requestID string) (PollSessio
 		RequestID: requestID,
 	}
 	var response PollSessionStatusResponse
-	sendErr := c.transport.Send(request, &response)
+	sendErr := c.Transport.Send(request, &response)
 	if sendErr != nil {
 		return PollSessionStatusResponse{}, sendErr
 	}
@@ -425,7 +421,7 @@ func (c Client) GenerateAccessTokenForApp(refreshToken string, renew bool) (Gene
 		RenewalType:  renewalType,
 	}
 	var response GenerateAccessTokenResponse
-	sendErr := c.transport.Send(request, &response)
+	sendErr := c.Transport.Send(request, &response)
 	if sendErr != nil {
 		return GenerateAccessTokenResponse{}, sendErr
 	}

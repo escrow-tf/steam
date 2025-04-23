@@ -27,6 +27,19 @@ type AccountState struct {
 	totpState   *totp.State
 }
 
+func NewAccountState(accountName string, password string, sharedSecret string, identitySecret string) (*AccountState, error) {
+	state, err := totp.NewState(sharedSecret, identitySecret)
+	if err != nil {
+		return nil, fmt.Errorf("NewAccountState failed %v", err)
+	}
+
+	return &AccountState{
+		accountName: accountName,
+		password:    password,
+		totpState:   state,
+	}, nil
+}
+
 func (accountState *AccountState) TotpState() *totp.State {
 	return accountState.totpState
 }
@@ -49,28 +62,23 @@ type WebSession struct {
 	refreshInterval int
 }
 
-func NewAccountState(accountName string, password string, sharedSecret string, identitySecret string) (*AccountState, error) {
-	state, err := totp.NewState(sharedSecret, identitySecret)
-	if err != nil {
-		return nil, fmt.Errorf("NewAccountState failed %v", err)
-	}
-
-	return &AccountState{
-		accountName: accountName,
-		password:    password,
-		totpState:   state,
-	}, nil
+func (w *WebSession) Transport() *api.Transport {
+	return w.transport
 }
 
-func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, error) {
+func Authenticate(accountState *AccountState, webApiKey string) (*WebSession, error) {
 	deviceHostName, err := os.Hostname()
 	if err != nil {
 		return nil, fmt.Errorf("os.Hostname() failed: %v", err)
 	}
 
 	webTransport := api.NewTransport(webApiKey)
-	authClient := auth.NewClient(webTransport)
-	twoFactorClient := twofactor.NewClient(webTransport)
+	authClient := &auth.Client{
+		Transport: webTransport,
+	}
+	twoFactorClient := &twofactor.Client{
+		Transport: webTransport,
+	}
 
 	alignErr := twoFactorClient.AlignTime()
 	if alignErr != nil {
@@ -135,21 +143,23 @@ func (accountState *AccountState) Authenticate(webApiKey string) (*WebSession, e
 		return nil, fmt.Errorf("mobileconf.NewTransport failed: %v", err)
 	}
 
-	tradeOfferClient := tradeoffer.NewClient(webTransport, getSessionIdFromTransport)
-	communityClient := community.NewClient(webTransport)
-
 	webSession := &WebSession{
 		state:            accountState,
 		transport:        webTransport,
 		authClient:       authClient,
 		mobileConfClient: mobileConfClient,
-		tradeOfferClient: tradeOfferClient,
-		twoFactorClient:  twoFactorClient,
-		communityClient:  communityClient,
-		clientId:         sessionResponse.Response.ClientId,
-		requestId:        sessionResponse.Response.RequestId,
-		steamId:          steamID,
-		refreshInterval:  sessionResponse.Response.Interval,
+		tradeOfferClient: &tradeoffer.Client{
+			Transport:     webTransport,
+			SessionIdFunc: GetSessionId,
+		},
+		twoFactorClient: twoFactorClient,
+		communityClient: &community.Client{
+			Transport: webTransport,
+		},
+		clientId:        sessionResponse.Response.ClientId,
+		requestId:       sessionResponse.Response.RequestId,
+		steamId:         steamID,
+		refreshInterval: sessionResponse.Response.Interval,
 	}
 
 	err = webSession.pollSession()
@@ -263,7 +273,7 @@ func (w *WebSession) SteamId() steamid.SteamID {
 	return w.steamId
 }
 
-func getSessionIdFromTransport(transport *api.Transport) (string, error) {
+func GetSessionId(transport *api.Transport) (string, error) {
 	steamUrl := &url.URL{Scheme: "https", Host: "steamcommunity.com", Path: "/"}
 	steamCookies := transport.CookieJar().Cookies(steamUrl)
 	for _, cookie := range steamCookies {
@@ -276,7 +286,7 @@ func getSessionIdFromTransport(transport *api.Transport) (string, error) {
 }
 
 func (w *WebSession) SessionId() (string, error) {
-	return getSessionIdFromTransport(w.transport)
+	return GetSessionId(w.transport)
 }
 
 func (w *WebSession) MobileConfClient() *mobileconf.Client {

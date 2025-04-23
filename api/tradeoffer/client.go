@@ -13,15 +13,8 @@ import (
 type SessionIdFunc func(transport *api.Transport) (string, error)
 
 type Client struct {
-	transport     *api.Transport
-	sessionIdFunc SessionIdFunc
-}
-
-func NewClient(transport *api.Transport, sessionIdFunc SessionIdFunc) *Client {
-	return &Client{
-		transport:     transport,
-		sessionIdFunc: sessionIdFunc,
-	}
+	Transport     *api.Transport
+	SessionIdFunc SessionIdFunc
 }
 
 type ActionResponse struct {
@@ -62,7 +55,7 @@ func (t ActionRequest) Headers() (http.Header, error) {
 }
 
 func (c *Client) act(id uint64, verb string) (*ActionResponse, error) {
-	sessionId, sessionIdErr := c.sessionIdFunc(c.transport)
+	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
 	if sessionIdErr != nil {
 		return nil, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
 	}
@@ -73,7 +66,7 @@ func (c *Client) act(id uint64, verb string) (*ActionResponse, error) {
 		sessionId: sessionId,
 	}
 	var response ActionResponse
-	sendErr := c.transport.Send(request, &response)
+	sendErr := c.Transport.Send(request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}
@@ -170,7 +163,7 @@ type CreateResponse struct {
 }
 
 func (c *Client) Create(other steamid.SteamID, partnerToken string, myItems, theirItems []Item, message string) (CreateResponse, error) {
-	sessionId, sessionIdErr := c.sessionIdFunc(c.transport)
+	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
 	if sessionIdErr != nil {
 		return CreateResponse{}, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
 	}
@@ -215,7 +208,7 @@ func (c *Client) Create(other steamid.SteamID, partnerToken string, myItems, the
 		PartnerToken:     partnerToken,
 	}
 	var response CreateResponse
-	sendErr := c.transport.Send(request, &response)
+	sendErr := c.Transport.Send(request, &response)
 	if sendErr != nil {
 		return CreateResponse{}, fmt.Errorf("error creating new Offer: %v", sendErr)
 	}

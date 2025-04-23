@@ -10,17 +10,10 @@ import (
 )
 
 type Client struct {
-	aligned   bool
-	timeDiff  time.Duration
-	transport *api.Transport
-}
+	Transport *api.Transport
 
-func NewClient(transport *api.Transport) *Client {
-	return &Client{
-		aligned:   false,
-		timeDiff:  0,
-		transport: transport,
-	}
+	aligned  bool
+	timeDiff time.Duration
 }
 
 func (c *Client) SteamTime() (time.Time, error) {
@@ -78,7 +71,7 @@ type QueryTimeResponse struct {
 func (c *Client) QueryTime() (*QueryTimeResponse, error) {
 	request := QueryTimeRequest{}
 	var response QueryTimeResponse
-	sendErr := c.transport.Send(request, &response)
+	sendErr := c.Transport.Send(request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}

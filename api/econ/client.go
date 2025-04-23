@@ -52,13 +52,7 @@ type TradeOffer struct {
 }
 
 type Client struct {
-	transport *api.Transport
-}
-
-func NewClient(webApiKey string, transport *api.Transport) Client {
-	return Client{
-		transport: transport,
-	}
+	Transport *api.Transport
 }
 
 type GetTradeOfferRequest struct {
@@ -104,7 +98,7 @@ func (c *Client) GetTradeOffer(id uint64) (*GetTradeOfferResponse, error) {
 		language: "en_us",
 	}
 	var response GetTradeOfferResponse
-	sendErr := c.transport.Send(request, &response)
+	sendErr := c.Transport.Send(request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}
@@ -182,7 +176,7 @@ func (c *Client) GetTradeOffers(getSent, getReceived, getDescriptions, activeOnl
 		historicalCutoff: historicalCutoff,
 	}
 	var response GetTradeOffersResponse
-	sendErr := c.transport.Send(request, &response)
+	sendErr := c.Transport.Send(request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}

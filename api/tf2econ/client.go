@@ -14,13 +14,7 @@ import (
 const WebApiBaseUrl = "https://api.steampowered.com"
 
 type Client struct {
-	transport *api.Transport
-}
-
-func NewClient(transport *api.Transport) *Client {
-	return &Client{
-		transport: transport,
-	}
+	Transport *api.Transport
 }
 
 type PlayerItemsRequest struct {
@@ -109,7 +103,7 @@ func (client *Client) GetPlayerItems(steamId steamid.SteamID) (*PlayerItemsRespo
 		steamId: steamId,
 	}
 	var response PlayerItemsResponse
-	sendErr := client.transport.Send(request, &response)
+	sendErr := client.Transport.Send(request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}

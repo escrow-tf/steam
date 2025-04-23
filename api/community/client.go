@@ -12,11 +12,7 @@ import (
 const BaseURL = "https://www.steamcommunity.com"
 
 type Client struct {
-	transport *api.Transport
-}
-
-func NewClient(transport *api.Transport) *Client {
-	return &Client{transport: transport}
+	Transport *api.Transport
 }
 
 type PlayerInventoryRequest struct {
@@ -133,7 +129,7 @@ func (c Client) GetPlayerInventory(steamID steamid.SteamID, appID, contextID, la
 		start:     start,
 	}
 	response := &PlayerInventory{}
-	sendErr := c.transport.Send(request, response)
+	sendErr := c.Transport.Send(request, response)
 	if sendErr != nil {
 		return nil, sendErr
 	}
