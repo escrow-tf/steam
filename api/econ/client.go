@@ -66,6 +66,10 @@ type GetTradeOfferRequest struct {
 	language string
 }
 
+func (g GetTradeOfferRequest) Headers() (http.Header, error) {
+	return nil, nil
+}
+
 func (g GetTradeOfferRequest) Retryable() bool {
 	return true
 }
@@ -116,6 +120,10 @@ type GetTradeOffersRequest struct {
 	historicalOnly   bool
 	historicalCutoff uint32
 	language         string
+}
+
+func (g GetTradeOffersRequest) Headers() (http.Header, error) {
+	return nil, nil
 }
 
 func (g GetTradeOffersRequest) Retryable() bool {

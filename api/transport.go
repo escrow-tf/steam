@@ -76,6 +76,7 @@ type SteamRequest interface {
 	Method() string
 	Url() string
 	Values() (url.Values, error)
+	Headers() (http.Header, error)
 }
 
 type Transport struct {
@@ -130,7 +131,7 @@ func (c Transport) Send(request SteamRequest, response any) error {
 
 	httpMethod := request.Method()
 
-	values, valuesErr := request.Values()
+	requestValues, valuesErr := request.Values()
 	if valuesErr != nil {
 		return valuesErr
 	}
@@ -141,18 +142,18 @@ func (c Transport) Send(request SteamRequest, response any) error {
 	}
 
 	if request.RequiresApiKey() {
-		if values == nil {
-			values = make(url.Values)
+		if requestValues == nil {
+			requestValues = make(url.Values)
 		}
-		values.Add("key", c.webApiKey)
+		requestValues.Add("key", c.webApiKey)
 	}
 
 	var httpBody io.Reader
-	if values != nil {
+	if requestValues != nil {
 		if httpMethod == http.MethodGet {
-			requestUrl += values.Encode()
+			requestUrl += requestValues.Encode()
 		} else {
-			httpBody = strings.NewReader(values.Encode())
+			httpBody = strings.NewReader(requestValues.Encode())
 		}
 	}
 
@@ -165,6 +166,19 @@ func (c Transport) Send(request SteamRequest, response any) error {
 	httpRequest.Header.Add("User-Agent", "okhttp/3.12.12")
 	if httpMethod == http.MethodPost {
 		httpRequest.Header.Add("Content-Type", FormContentType)
+	}
+
+	headers, headersErr := request.Headers()
+	if headersErr != nil {
+		return headersErr
+	}
+
+	if headers != nil {
+		for headerKey, headerValues := range headers {
+			for _, headerValue := range headerValues {
+				httpRequest.Header.Add(headerKey, headerValue)
+			}
+		}
 	}
 
 	httpClient := c.client

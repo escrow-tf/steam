@@ -27,6 +27,10 @@ type PlayerItemsRequest struct {
 	steamId steamid.SteamID
 }
 
+func (p PlayerItemsRequest) Headers() (http.Header, error) {
+	return nil, nil
+}
+
 func (p PlayerItemsRequest) Retryable() bool {
 	return true
 }

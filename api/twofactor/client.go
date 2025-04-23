@@ -43,6 +43,10 @@ func (c *Client) AlignTime() error {
 
 type QueryTimeRequest struct{}
 
+func (q QueryTimeRequest) Headers() (http.Header, error) {
+	return nil, nil
+}
+
 func (q QueryTimeRequest) Retryable() bool {
 	return false
 }

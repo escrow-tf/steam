@@ -60,6 +60,10 @@ type Request struct {
 	totpTime time.Time
 }
 
+func (r Request) Headers() (http.Header, error) {
+	return nil, nil
+}
+
 func (r Request) Retryable() bool {
 	return !r.Posts
 }

@@ -18,6 +18,10 @@ type GetRsaKeyRequest struct {
 	accountName string
 }
 
+func (g GetRsaKeyRequest) Headers() (http.Header, error) {
+	return nil, nil
+}
+
 func (g GetRsaKeyRequest) Retryable() bool {
 	return true
 }
@@ -181,6 +185,10 @@ type StartSessionRequest struct {
 	QosLevel            int
 }
 
+func (r StartSessionRequest) Headers() (http.Header, error) {
+	return nil, nil
+}
+
 func (r StartSessionRequest) Retryable() bool {
 	return false
 }
@@ -255,6 +263,10 @@ type UpdateSessionWithSteamGuardCodeRequest struct {
 	CodeType GuardType
 }
 
+func (r UpdateSessionWithSteamGuardCodeRequest) Headers() (http.Header, error) {
+	return nil, nil
+}
+
 func (r UpdateSessionWithSteamGuardCodeRequest) Retryable() bool {
 	return false
 }
@@ -302,6 +314,10 @@ func (c Client) SubmitSteamGuardCode(clientID string, steamID steamid.SteamID, c
 type PollSessionStatusRequest struct {
 	ClientID  string
 	RequestID string
+}
+
+func (r PollSessionStatusRequest) Headers() (http.Header, error) {
+	return nil, nil
 }
 
 func (r PollSessionStatusRequest) Retryable() bool {
@@ -355,6 +371,10 @@ type GenerateAccessTokenRequest struct {
 	RefreshToken string           `json:"refresh_token"`
 	SteamID      string           `json:"steamid"`
 	RenewalType  TokenRenewalType `json:"renewal_type"`
+}
+
+func (r GenerateAccessTokenRequest) Headers() (http.Header, error) {
+	return nil, nil
 }
 
 func (r GenerateAccessTokenRequest) Retryable() bool {

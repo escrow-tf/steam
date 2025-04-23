@@ -28,6 +28,10 @@ type PlayerInventoryRequest struct {
 	start     uint
 }
 
+func (p PlayerInventoryRequest) Headers() (http.Header, error) {
+	return nil, nil
+}
+
 func (p PlayerInventoryRequest) Retryable() bool {
 	return true
 }
