@@ -6,9 +6,9 @@ import (
 	"strconv"
 )
 
-type Universe int
-type Type int
-type Instance int
+type Universe uint
+type Type uint
+type Instance uint
 
 const (
 	UniverseInvalid Universe = iota
@@ -40,9 +40,9 @@ const (
 )
 
 const (
-	AccountIDMask       int64 = 0xFFFFFFFF
-	AccountInstanceMask int64 = 0x000FFFFF
-	AccountTypeMask     int64 = 0xF
+	AccountIDMask       uint64 = 0xFFFFFFFF
+	AccountInstanceMask uint64 = 0x000FFFFF
+	AccountTypeMask     uint64 = 0xF
 )
 
 var (
@@ -54,7 +54,7 @@ type SteamID struct {
 	universe  Universe
 	idType    Type
 	instance  Instance
-	accountID int32
+	accountID uint32
 }
 
 func ParseSteamID64(s string) (SteamID, error) {
@@ -70,12 +70,12 @@ func ParseSteamID64(s string) (SteamID, error) {
 		return steamID, ErrorEmpty
 	}
 
-	parsedID, err := strconv.ParseInt(s, 10, 64)
+	parsedID, err := strconv.ParseUint(s, 10, 64)
 	if err != nil {
 		return steamID, fmt.Errorf("can't parse steamID into int64: %w", err)
 	}
 
-	steamID.accountID = int32(parsedID & AccountIDMask)
+	steamID.accountID = uint32(parsedID & AccountIDMask)
 	steamID.instance = Instance((parsedID >> 32) & AccountInstanceMask)
 	steamID.idType = Type((parsedID >> 52) & AccountTypeMask)
 	steamID.universe = Universe(parsedID >> 56)
@@ -111,6 +111,6 @@ func (id SteamID) IsValidIndividual() bool {
 		id.accountID != 0
 }
 
-func (id SteamID) AccountId() int {
-	return int(id.accountID)
+func (id SteamID) AccountId() uint32 {
+	return id.accountID
 }
