@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/api/community"
-	"github.com/escrow-tf/steam/steamid"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -38,7 +37,7 @@ type TradeOffer struct {
 	TradeOfferId       uint64                  `json:",string"`
 	TradeId            uint64                  `json:",string"`
 	OtherAccountId     uint32                  `json:"accountid_other"`
-	OtherSteamId       steamid.SteamID         `json:"-"`
+	OtherSteamId       string                  `json:"other_steam_id"`
 	Message            string                  `json:"message"`
 	ExpirationTime     uint32                  `json:"expiraton_time"`
 	State              OfferState              `json:"trade_offer_state"`
