@@ -208,7 +208,7 @@ func (c Client) GetList() (GetListResponse, error) {
 type DetailsPageResponse struct {
 	TradeOffer *struct {
 		Id string `json:"id,omitempty"`
-	} `json:"trade_offer,omitempty"`
+	} `json:"tradeoffer,omitempty"`
 }
 
 func (c Client) GetDetailsPage(id string) (DetailsPageResponse, error) {
