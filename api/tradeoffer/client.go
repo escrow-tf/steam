@@ -117,7 +117,7 @@ type CreateRequest struct {
 	Message          string
 	OfferJson        string
 	CreateParamsJson string
-	PartnerAccountId int
+	PartnerAccountId uint32
 	PartnerToken     string
 }
 
@@ -149,7 +149,7 @@ func (c CreateRequest) Values() (url.Values, error) {
 }
 
 func (c CreateRequest) Headers() (http.Header, error) {
-	encodedPartnerAccountId := strconv.Itoa(c.PartnerAccountId)
+	encodedPartnerAccountId := strconv.FormatUint(uint64(c.PartnerAccountId), 10)
 	encodedPartnerToken := url.QueryEscape(c.PartnerToken)
 	referer := fmt.Sprintf("https://steamcommunity.com/tradeoffer/new/?partner=%s&token=%s", encodedPartnerAccountId, encodedPartnerToken)
 	return http.Header{
