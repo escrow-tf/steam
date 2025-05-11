@@ -273,13 +273,19 @@ func (w *WebSession) finalizeLogin() error {
 }
 
 func (w *WebSession) BeginPolling(ctx context.Context) {
-	// TODO: how do we cancel polling?
 	go func() {
-		time.Sleep(time.Duration(w.refreshInterval) * time.Second)
+		ticker := time.Tick(time.Duration(w.refreshInterval) * time.Second)
+		for range ticker {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
 
-		err := w.pollSession(ctx)
-		if err != nil {
-			log.Printf("Error polling session: %v", err)
+			err := w.pollSession(ctx)
+			if err != nil {
+				log.Printf("Error polling session: %v", err)
+			}
 		}
 	}()
 }
