@@ -11,10 +11,10 @@ import (
 	"strconv"
 )
 
-type SessionIdFunc func(Transport api.Transport) (string, error)
+type SessionIdFunc func(transport api.Transport) (string, error)
 
 type Client struct {
-	Transport     *api.HttpTransport
+	Transport     api.Transport
 	SessionIdFunc SessionIdFunc
 }
 
