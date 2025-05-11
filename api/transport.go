@@ -1,6 +1,7 @@
 ﻿package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/escrow-tf/steam/steamlang"
@@ -123,7 +124,7 @@ func (c Transport) CookieJar() http.CookieJar {
 }
 
 // Send sends a specialized HTTP Request to steam.
-func (c Transport) Send(request SteamRequest, response any) error {
+func (c Transport) Send(ctx context.Context, request SteamRequest, response any) error {
 	//rv := reflect.ValueOf(response)
 	//if rv.!(rv.IsZero() || rv.IsNil()) && rv.Kind() != reflect.Pointer {
 	//	return fmt.Errorf("response type must be a pointer when not nil")
@@ -157,7 +158,7 @@ func (c Transport) Send(request SteamRequest, response any) error {
 		}
 	}
 
-	httpRequest, httpRequestErr := http.NewRequest(httpMethod, requestUrl, httpBody)
+	httpRequest, httpRequestErr := http.NewRequestWithContext(ctx, httpMethod, requestUrl, httpBody)
 	if httpRequestErr != nil {
 		return httpRequestErr
 	}

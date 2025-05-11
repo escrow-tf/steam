@@ -1,6 +1,7 @@
 ﻿package mobileconf
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -103,7 +105,7 @@ func (r Request) Values() (url.Values, error) {
 	return parameters, nil
 }
 
-func (c Client) SendMobileConfRequest(request Request, response any) error {
+func (c Client) SendMobileConfRequest(ctx context.Context, request Request, response any) error {
 	// totpTime := totp.Time(0)
 	totpTime, steamTimeErr := c.twoFactor.SteamTime()
 	if steamTimeErr != nil {
@@ -130,19 +132,28 @@ func (c Client) SendMobileConfRequest(request Request, response any) error {
 		parameters.Add("ck", request.Operation.Nonce)
 	}
 
-	var httpResponse *http.Response
-	var httpError error
+	var httpRequest *http.Request
+	var httpRequestErr error
 	if request.Posts {
 		requestUrl := fmt.Sprintf("https://steamcommunity.com/mobileconf/%s", request.Path)
-		httpResponse, httpError = c.client.PostForm(requestUrl, parameters)
+		httpRequest, httpRequestErr = http.NewRequestWithContext(ctx, http.MethodPost, requestUrl, strings.NewReader(parameters.Encode()))
+		if httpRequestErr == nil {
+			httpRequest.Header.Add("Content-Type", api.FormContentType)
+		}
 	} else {
 		queryString := parameters.Encode()
 		requestUrl := fmt.Sprintf("https://steamcommunity.com/mobileconf/%s?%s", request.Path, queryString)
-		httpResponse, httpError = c.client.Get(requestUrl)
+		httpRequest, httpRequestErr = http.NewRequestWithContext(ctx, http.MethodGet, requestUrl, strings.NewReader(parameters.Encode()))
 	}
 
+	if httpRequestErr != nil {
+		return fmt.Errorf("mobileconf request errored: %v", httpRequestErr)
+	}
+
+	httpResponse, httpError := c.client.Do(httpRequest)
+
 	if httpError != nil {
-		return fmt.Errorf("mobileconf request errored: %v", err)
+		return fmt.Errorf("mobileconf request errored: %v", httpError)
 	}
 
 	if err = steamlang.EnsureSuccessResponse(httpResponse); err != nil {
@@ -184,7 +195,7 @@ type GetListResponse struct {
 	} `json:"conf"`
 }
 
-func (c Client) GetList() (GetListResponse, error) {
+func (c Client) GetList(ctx context.Context) (GetListResponse, error) {
 	request := Request{
 		Posts:     false,
 		Path:      "getlist",
@@ -193,7 +204,7 @@ func (c Client) GetList() (GetListResponse, error) {
 	}
 
 	response := GetListResponse{}
-	err := c.SendMobileConfRequest(request, &response)
+	err := c.SendMobileConfRequest(ctx, request, &response)
 	if err != nil {
 		return GetListResponse{}, fmt.Errorf("getlist mobile conf request failed: %v", err)
 	}
@@ -211,7 +222,7 @@ type DetailsPageResponse struct {
 	} `json:"tradeoffer,omitempty"`
 }
 
-func (c Client) GetDetailsPage(id string) (DetailsPageResponse, error) {
+func (c Client) GetDetailsPage(ctx context.Context, id string) (DetailsPageResponse, error) {
 	request := Request{
 		Posts:     false,
 		Path:      "detailspage/" + id,
@@ -220,7 +231,7 @@ func (c Client) GetDetailsPage(id string) (DetailsPageResponse, error) {
 	}
 
 	response := DetailsPageResponse{}
-	err := c.SendMobileConfRequest(request, &response)
+	err := c.SendMobileConfRequest(ctx, request, &response)
 	if err != nil {
 		return DetailsPageResponse{}, fmt.Errorf("detailspage mobile conf request failed: %v", err)
 	}
@@ -235,7 +246,7 @@ type AcceptResponse struct {
 	Details   string `json:"details,omitempty"`
 }
 
-func (c Client) Accept(id, nonce string) (AcceptResponse, error) {
+func (c Client) Accept(ctx context.Context, id, nonce string) (AcceptResponse, error) {
 	request := Request{
 		Posts: false,
 		Path:  "ajaxop",
@@ -248,7 +259,7 @@ func (c Client) Accept(id, nonce string) (AcceptResponse, error) {
 	}
 
 	response := AcceptResponse{}
-	err := c.SendMobileConfRequest(request, &response)
+	err := c.SendMobileConfRequest(ctx, request, &response)
 	if err != nil {
 		return AcceptResponse{}, fmt.Errorf("accept mobile conf request failed: %v", err)
 	}
@@ -267,7 +278,7 @@ type DeclineResponse struct {
 	Details   string `json:"details,omitempty"`
 }
 
-func (c Client) Decline(id, nonce string) (DeclineResponse, error) {
+func (c Client) Decline(ctx context.Context, id, nonce string) (DeclineResponse, error) {
 	request := Request{
 		Posts: false,
 		Path:  "ajaxop",
@@ -280,7 +291,7 @@ func (c Client) Decline(id, nonce string) (DeclineResponse, error) {
 	}
 
 	response := DeclineResponse{}
-	err := c.SendMobileConfRequest(request, &response)
+	err := c.SendMobileConfRequest(ctx, request, &response)
 	if err != nil {
 		return DeclineResponse{}, fmt.Errorf("decline mobile conf request failed: %v", err)
 	}

@@ -1,6 +1,7 @@
 ﻿package econ
 
 import (
+	"context"
 	"fmt"
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/api/community"
@@ -91,13 +92,13 @@ type GetTradeOfferResponse struct {
 	Descriptions []*community.Description `json:"descriptions"`
 }
 
-func (c *Client) GetTradeOffer(id uint64) (*GetTradeOfferResponse, error) {
+func (c *Client) GetTradeOffer(ctx context.Context, id uint64) (*GetTradeOfferResponse, error) {
 	request := GetTradeOfferRequest{
 		id:       id,
 		language: "en_us",
 	}
 	var response GetTradeOfferResponse
-	sendErr := c.Transport.Send(request, &response)
+	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}
@@ -165,7 +166,7 @@ type GetTradeOffersResponse struct {
 	Descriptions []*community.Description `json:"descriptions"`
 }
 
-func (c *Client) GetTradeOffers(getSent, getReceived, getDescriptions, activeOnly, historicalOnly bool, historicalCutoff uint32) (*GetTradeOffersResponse, error) {
+func (c *Client) GetTradeOffers(ctx context.Context, getSent, getReceived, getDescriptions, activeOnly, historicalOnly bool, historicalCutoff uint32) (*GetTradeOffersResponse, error) {
 	request := GetTradeOffersRequest{
 		getSent:          getSent,
 		getReceived:      getReceived,
@@ -175,7 +176,7 @@ func (c *Client) GetTradeOffers(getSent, getReceived, getDescriptions, activeOnl
 		historicalCutoff: historicalCutoff,
 	}
 	var response GetTradeOffersResponse
-	sendErr := c.Transport.Send(request, &response)
+	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}

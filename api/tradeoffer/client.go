@@ -1,6 +1,7 @@
 ﻿package tradeoffer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/escrow-tf/steam/api"
@@ -54,7 +55,7 @@ func (t ActionRequest) Headers() (http.Header, error) {
 	return nil, nil
 }
 
-func (c *Client) act(id uint64, verb string) (*ActionResponse, error) {
+func (c *Client) act(ctx context.Context, id uint64, verb string) (*ActionResponse, error) {
 	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
 	if sessionIdErr != nil {
 		return nil, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
@@ -66,23 +67,23 @@ func (c *Client) act(id uint64, verb string) (*ActionResponse, error) {
 		sessionId: sessionId,
 	}
 	var response ActionResponse
-	sendErr := c.Transport.Send(request, &response)
+	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}
 	return &response, nil
 }
 
-func (c *Client) Accept(id uint64) (*ActionResponse, error) {
-	return c.act(id, "accept")
+func (c *Client) Accept(ctx context.Context, id uint64) (*ActionResponse, error) {
+	return c.act(ctx, id, "accept")
 }
 
-func (c *Client) Decline(id uint64) (*ActionResponse, error) {
-	return c.act(id, "decline")
+func (c *Client) Decline(ctx context.Context, id uint64) (*ActionResponse, error) {
+	return c.act(ctx, id, "decline")
 }
 
-func (c *Client) Cancel(id uint64) (*ActionResponse, error) {
-	return c.act(id, "cancel")
+func (c *Client) Cancel(ctx context.Context, id uint64) (*ActionResponse, error) {
+	return c.act(ctx, id, "cancel")
 }
 
 type CreateParams struct {
@@ -162,7 +163,7 @@ type CreateResponse struct {
 	TradeOfferId uint64 `json:"tradeOfferId,string"`
 }
 
-func (c *Client) Create(other steamid.SteamID, partnerToken string, myItems, theirItems []Item, message string) (CreateResponse, error) {
+func (c *Client) Create(ctx context.Context, other steamid.SteamID, partnerToken string, myItems, theirItems []Item, message string) (CreateResponse, error) {
 	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
 	if sessionIdErr != nil {
 		return CreateResponse{}, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
@@ -208,7 +209,7 @@ func (c *Client) Create(other steamid.SteamID, partnerToken string, myItems, the
 		PartnerToken:     partnerToken,
 	}
 	var response CreateResponse
-	sendErr := c.Transport.Send(request, &response)
+	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return CreateResponse{}, fmt.Errorf("error creating new Offer: %v", sendErr)
 	}

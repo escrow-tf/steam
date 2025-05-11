@@ -1,6 +1,7 @@
 ﻿package steam
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -66,7 +67,7 @@ func (w *WebSession) Transport() *api.Transport {
 	return w.transport
 }
 
-func Authenticate(accountState *AccountState, webApiKey string) (*WebSession, error) {
+func Authenticate(ctx context.Context, accountState *AccountState, webApiKey string) (*WebSession, error) {
 	deviceHostName, err := os.Hostname()
 	if err != nil {
 		return nil, fmt.Errorf("os.Hostname() failed: %v", err)
@@ -80,12 +81,12 @@ func Authenticate(accountState *AccountState, webApiKey string) (*WebSession, er
 		Transport: webTransport,
 	}
 
-	alignErr := twoFactorClient.AlignTime()
+	alignErr := twoFactorClient.AlignTime(ctx)
 	if alignErr != nil {
 		return nil, fmt.Errorf("twoFactorClient.AlignTime() failed: %v", alignErr)
 	}
 
-	encryptedPassword, err := authClient.EncryptAccountPassword(accountState.accountName, accountState.password)
+	encryptedPassword, err := authClient.EncryptAccountPassword(ctx, accountState.accountName, accountState.password)
 	if err != nil {
 		return nil, fmt.Errorf("EncryptPassword failed %v", err)
 	}
@@ -97,7 +98,7 @@ func Authenticate(accountState *AccountState, webApiKey string) (*WebSession, er
 		GamingDeviceType: auth.DefaultGamingDeviceType,
 	}
 
-	sessionResponse, err := authClient.StartSessionWithCredentials(accountState.accountName, encryptedPassword, deviceDetails)
+	sessionResponse, err := authClient.StartSessionWithCredentials(ctx, accountState.accountName, encryptedPassword, deviceDetails)
 	if err != nil {
 		return nil, fmt.Errorf("StartSessionWithCredentials failed %v", err)
 	}
@@ -133,7 +134,7 @@ func Authenticate(accountState *AccountState, webApiKey string) (*WebSession, er
 		return nil, fmt.Errorf("error generating totp code failed: %v", err)
 	}
 
-	err = authClient.SubmitSteamGuardCode(sessionResponse.Response.ClientId, steamID, code)
+	err = authClient.SubmitSteamGuardCode(ctx, sessionResponse.Response.ClientId, steamID, code)
 	if err != nil {
 		return nil, fmt.Errorf("error submitting totp code: %v", err)
 	}
@@ -162,7 +163,7 @@ func Authenticate(accountState *AccountState, webApiKey string) (*WebSession, er
 		refreshInterval: sessionResponse.Response.Interval,
 	}
 
-	err = webSession.pollSession()
+	err = webSession.pollSession(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -176,8 +177,8 @@ func Authenticate(accountState *AccountState, webApiKey string) (*WebSession, er
 	return webSession, nil
 }
 
-func (w *WebSession) pollSession() error {
-	pollResponse, err := w.authClient.PollSessionStatus(w.clientId, w.requestId)
+func (w *WebSession) pollSession(ctx context.Context) error {
+	pollResponse, err := w.authClient.PollSessionStatus(ctx, w.clientId, w.requestId)
 	if err != nil {
 		return fmt.Errorf("PollSessionStatus failed: %v", err)
 	}
@@ -199,7 +200,7 @@ func (w *WebSession) pollSession() error {
 	if len(w.accessToken) == 0 {
 		// under some circumstances, the access token may not be issued by steam when polling login. We may need to
 		// establish the access token ourselves.
-		accessTokenResponse, accessTokenErr := w.authClient.GenerateAccessTokenForApp(w.refreshToken, false)
+		accessTokenResponse, accessTokenErr := w.authClient.GenerateAccessTokenForApp(ctx, w.refreshToken, false)
 		if accessTokenErr != nil {
 			return fmt.Errorf("GenerateAccessTokenForApp failed: %v", accessTokenErr)
 		}
@@ -257,12 +258,12 @@ func (w *WebSession) finalizeLogin() error {
 	return nil
 }
 
-func (w *WebSession) BeginPolling() {
+func (w *WebSession) BeginPolling(ctx context.Context) {
 	// TODO: how do we cancel polling?
 	go func() {
 		time.Sleep(time.Duration(w.refreshInterval) * time.Second)
 
-		err := w.pollSession()
+		err := w.pollSession(ctx)
 		if err != nil {
 			log.Printf("Error polling session: %v", err)
 		}

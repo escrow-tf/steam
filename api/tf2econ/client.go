@@ -1,6 +1,7 @@
 ﻿package tf2econ
 
 import (
+	"context"
 	"fmt"
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
@@ -98,12 +99,12 @@ func InitializeRequestHeaders(request *retryablehttp.Request) {
 	request.Header.Add("User-Agent", "okhttp/3.12.12")
 }
 
-func (client *Client) GetPlayerItems(steamId steamid.SteamID) (*PlayerItemsResponse, error) {
+func (client *Client) GetPlayerItems(ctx context.Context, steamId steamid.SteamID) (*PlayerItemsResponse, error) {
 	request := PlayerItemsRequest{
 		steamId: steamId,
 	}
 	var response PlayerItemsResponse
-	sendErr := client.Transport.Send(request, &response)
+	sendErr := client.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}

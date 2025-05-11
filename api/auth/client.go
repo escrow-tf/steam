@@ -1,6 +1,7 @@
 ﻿package auth
 
 import (
+	"context"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -82,10 +83,10 @@ type Client struct {
 	Transport *api.Transport
 }
 
-func (c Client) GetPublicRsaKey(accountName string) (PublicRsaKey, error) {
+func (c Client) GetPublicRsaKey(ctx context.Context, accountName string) (PublicRsaKey, error) {
 	request := GetRsaKeyRequest{accountName: accountName}
 	var response GetRsaKeyResponse
-	sendErr := c.Transport.Send(request, &response)
+	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return PublicRsaKey{}, sendErr
 	}
@@ -105,8 +106,8 @@ type EncryptedPassword struct {
 
 // EncryptAccountPassword
 // Retrieves the RSA key for the specified accountName, and encrypted the given password using the RSA key.
-func (c Client) EncryptAccountPassword(accountName string, password string) (EncryptedPassword, error) {
-	publicKey, err := c.GetPublicRsaKey(accountName)
+func (c Client) EncryptAccountPassword(ctx context.Context, accountName string, password string) (EncryptedPassword, error) {
+	publicKey, err := c.GetPublicRsaKey(ctx, accountName)
 	if err != nil {
 		return EncryptedPassword{}, fmt.Errorf("GetPublicRsaKey failed: %v", err)
 	}
@@ -234,7 +235,7 @@ type StartSessionResponse struct {
 	} `json:"response"`
 }
 
-func (c Client) StartSessionWithCredentials(accountName string, password EncryptedPassword, deviceDetails DeviceDetails) (StartSessionResponse, error) {
+func (c Client) StartSessionWithCredentials(ctx context.Context, accountName string, password EncryptedPassword, deviceDetails DeviceDetails) (StartSessionResponse, error) {
 	request := StartSessionRequest{
 		AccountName:         accountName,
 		EncryptedPassword:   password.Base64,
@@ -244,7 +245,7 @@ func (c Client) StartSessionWithCredentials(accountName string, password Encrypt
 		QosLevel:            2,
 	}
 	var response StartSessionResponse
-	sendErr := c.Transport.Send(request, &response)
+	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return StartSessionResponse{}, sendErr
 	}
@@ -288,7 +289,7 @@ func (r UpdateSessionWithSteamGuardCodeRequest) Url() string {
 	return fmt.Sprintf("%v/IAuthenticationService/UpdateAuthSessionWithSteamGuardCode/v1/", api.BaseURL)
 }
 
-func (c Client) SubmitSteamGuardCode(clientID string, steamID steamid.SteamID, code string) error {
+func (c Client) SubmitSteamGuardCode(ctx context.Context, clientID string, steamID steamid.SteamID, code string) error {
 	if !steamID.IsValidIndividual() {
 		return fmt.Errorf("steamID is not valid individual: %v", steamID.String())
 	}
@@ -299,7 +300,7 @@ func (c Client) SubmitSteamGuardCode(clientID string, steamID steamid.SteamID, c
 		Code:     code,
 		CodeType: DeviceCodeGuardType,
 	}
-	sendErr := c.Transport.Send(request, nil)
+	sendErr := c.Transport.Send(ctx, request, nil)
 	if sendErr != nil {
 		return sendErr
 	}
@@ -350,13 +351,13 @@ type PollSessionStatusResponse struct {
 	} `json:"response"`
 }
 
-func (c Client) PollSessionStatus(clientID string, requestID string) (PollSessionStatusResponse, error) {
+func (c Client) PollSessionStatus(ctx context.Context, clientID string, requestID string) (PollSessionStatusResponse, error) {
 	request := PollSessionStatusRequest{
 		ClientID:  clientID,
 		RequestID: requestID,
 	}
 	var response PollSessionStatusResponse
-	sendErr := c.Transport.Send(request, &response)
+	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return PollSessionStatusResponse{}, sendErr
 	}
@@ -404,7 +405,7 @@ type GenerateAccessTokenResponse struct {
 	} `json:"response"`
 }
 
-func (c Client) GenerateAccessTokenForApp(refreshToken string, renew bool) (GenerateAccessTokenResponse, error) {
+func (c Client) GenerateAccessTokenForApp(ctx context.Context, refreshToken string, renew bool) (GenerateAccessTokenResponse, error) {
 	jwt, err := DecodeSimpleJwt(refreshToken)
 	if err != nil {
 		return GenerateAccessTokenResponse{}, err
@@ -421,7 +422,7 @@ func (c Client) GenerateAccessTokenForApp(refreshToken string, renew bool) (Gene
 		RenewalType:  renewalType,
 	}
 	var response GenerateAccessTokenResponse
-	sendErr := c.Transport.Send(request, &response)
+	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return GenerateAccessTokenResponse{}, sendErr
 	}

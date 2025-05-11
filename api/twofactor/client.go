@@ -1,6 +1,7 @@
 package twofactor
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/escrow-tf/steam/api"
@@ -23,9 +24,9 @@ func (c *Client) SteamTime() (time.Time, error) {
 	return time.Now().UTC().Add(c.timeDiff), nil
 }
 
-func (c *Client) AlignTime() error {
+func (c *Client) AlignTime(ctx context.Context) error {
 	unixNow := time.Now().Unix()
-	timeResponse, err := c.QueryTime()
+	timeResponse, err := c.QueryTime(ctx)
 	if err != nil {
 		return err
 	}
@@ -68,10 +69,10 @@ type QueryTimeResponse struct {
 	} `json:"response"`
 }
 
-func (c *Client) QueryTime() (*QueryTimeResponse, error) {
+func (c *Client) QueryTime(ctx context.Context) (*QueryTimeResponse, error) {
 	request := QueryTimeRequest{}
 	var response QueryTimeResponse
-	sendErr := c.Transport.Send(request, &response)
+	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return nil, sendErr
 	}

@@ -1,6 +1,7 @@
 ﻿package community
 
 import (
+	"context"
 	"fmt"
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
@@ -119,7 +120,7 @@ type Action struct {
 	Name string `json:"name"`
 }
 
-func (c Client) GetPlayerInventory(steamID steamid.SteamID, appID, contextID, language string, count uint, start uint) (*PlayerInventory, error) {
+func (c Client) GetPlayerInventory(ctx context.Context, steamID steamid.SteamID, appID, contextID, language string, count uint, start uint) (*PlayerInventory, error) {
 	request := PlayerInventoryRequest{
 		steamId:   steamID,
 		appId:     appID,
@@ -129,7 +130,7 @@ func (c Client) GetPlayerInventory(steamID steamid.SteamID, appID, contextID, la
 		start:     start,
 	}
 	response := &PlayerInventory{}
-	sendErr := c.Transport.Send(request, response)
+	sendErr := c.Transport.Send(ctx, request, response)
 	if sendErr != nil {
 		return nil, sendErr
 	}
