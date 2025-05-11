@@ -12,7 +12,7 @@ import (
 const WebApiBaseUrl = "https://api.steampowered.com"
 
 type Client struct {
-	Transport *api.Transport
+	Transport *api.HttpTransport
 }
 
 type PlayerItemsRequest struct {

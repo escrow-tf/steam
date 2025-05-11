@@ -11,10 +11,10 @@ import (
 	"strconv"
 )
 
-type SessionIdFunc func(transport *api.Transport) (string, error)
+type SessionIdFunc func(transport *api.HttpTransport) (string, error)
 
 type Client struct {
-	Transport     *api.Transport
+	Transport     *api.HttpTransport
 	SessionIdFunc SessionIdFunc
 }
 
@@ -152,7 +152,11 @@ func (c CreateRequest) Values() (url.Values, error) {
 func (c CreateRequest) Headers() (http.Header, error) {
 	encodedPartnerAccountId := strconv.FormatUint(uint64(c.PartnerAccountId), 10)
 	encodedPartnerToken := url.QueryEscape(c.PartnerToken)
-	referer := fmt.Sprintf("https://steamcommunity.com/tradeoffer/new/?partner=%s&token=%s", encodedPartnerAccountId, encodedPartnerToken)
+	referer := fmt.Sprintf(
+		"https://steamcommunity.com/tradeoffer/new/?partner=%s&token=%s",
+		encodedPartnerAccountId,
+		encodedPartnerToken,
+	)
 	return http.Header{
 		"Referer": []string{referer},
 	}, nil
@@ -163,7 +167,13 @@ type CreateResponse struct {
 	TradeOfferId uint64 `json:"tradeOfferId,string"`
 }
 
-func (c *Client) Create(ctx context.Context, other steamid.SteamID, partnerToken string, myItems, theirItems []Item, message string) (CreateResponse, error) {
+func (c *Client) Create(
+	ctx context.Context,
+	other steamid.SteamID,
+	partnerToken string,
+	myItems, theirItems []Item,
+	message string,
+) (CreateResponse, error) {
 	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
 	if sessionIdErr != nil {
 		return CreateResponse{}, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)

@@ -47,7 +47,7 @@ func (accountState *AccountState) TotpState() *totp.State {
 
 type WebSession struct {
 	state            *AccountState
-	transport        *api.Transport
+	transport        *api.HttpTransport
 	authClient       *auth.Client
 	mobileConfClient *mobileconf.Client
 	tradeOfferClient *tradeoffer.Client
@@ -63,7 +63,7 @@ type WebSession struct {
 	refreshInterval int
 }
 
-func (w *WebSession) Transport() *api.Transport {
+func (w *WebSession) Transport() *api.HttpTransport {
 	return w.transport
 }
 
@@ -274,7 +274,7 @@ func (w *WebSession) SteamId() steamid.SteamID {
 	return w.steamId
 }
 
-func GetSessionId(transport *api.Transport) (string, error) {
+func GetSessionId(transport *api.HttpTransport) (string, error) {
 	steamUrl := &url.URL{Scheme: "https", Host: "steamcommunity.com", Path: "/"}
 	steamCookies := transport.CookieJar().Cookies(steamUrl)
 	for _, cookie := range steamCookies {
@@ -290,14 +290,14 @@ func (w *WebSession) SessionId() (string, error) {
 	return GetSessionId(w.transport)
 }
 
-func (w *WebSession) MobileConfClient() *mobileconf.Client {
+func (w *WebSession) MobileConfClient() mobileconf.Api {
 	return w.mobileConfClient
 }
 
-func (w *WebSession) TradeOfferClient() *tradeoffer.Client {
+func (w *WebSession) TradeOfferClient() tradeoffer.Api {
 	return w.tradeOfferClient
 }
 
-func (w *WebSession) CommunityClient() *community.Client {
+func (w *WebSession) CommunityClient() community.Api {
 	return w.communityClient
 }

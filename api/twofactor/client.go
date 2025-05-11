@@ -11,7 +11,7 @@ import (
 )
 
 type Client struct {
-	Transport *api.Transport
+	Transport *api.HttpTransport
 
 	aligned  bool
 	timeDiff time.Duration

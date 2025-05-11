@@ -33,10 +33,10 @@ type Client struct {
 	steamID   steamid.SteamID
 	client    *http.Client
 	twoFactor *twofactor.Client
-	transport *api.Transport
+	transport *api.HttpTransport
 }
 
-func NewClient(totpState *totp.State, steamID steamid.SteamID, twoFactorClient *twofactor.Client, transport *api.Transport) (*Client, error) {
+func NewClient(totpState *totp.State, steamID steamid.SteamID, twoFactorClient *twofactor.Client, transport *api.HttpTransport) (*Client, error) {
 	return &Client{
 		totpState: totpState,
 		steamID:   steamID,
@@ -106,7 +106,7 @@ func (r Request) Values() (url.Values, error) {
 	return parameters, nil
 }
 
-func (c Client) SendMobileConfRequest(ctx context.Context, request Request, response any) error {
+func (c *Client) SendMobileConfRequest(ctx context.Context, request Request, response any) error {
 	// totpTime := totp.Time(0)
 	totpTime, steamTimeErr := c.twoFactor.SteamTime()
 	if steamTimeErr != nil {
@@ -196,7 +196,7 @@ type GetListResponse struct {
 	} `json:"conf"`
 }
 
-func (c Client) GetList(ctx context.Context) (GetListResponse, error) {
+func (c *Client) GetList(ctx context.Context) (GetListResponse, error) {
 	request := Request{
 		Posts:     false,
 		Path:      "getlist",
@@ -223,7 +223,7 @@ type DetailsPageResponse struct {
 	} `json:"tradeoffer,omitempty"`
 }
 
-func (c Client) GetDetailsPage(ctx context.Context, id string) (DetailsPageResponse, error) {
+func (c *Client) GetDetailsPage(ctx context.Context, id string) (DetailsPageResponse, error) {
 	request := Request{
 		Posts:     false,
 		Path:      "detailspage/" + id,
@@ -247,7 +247,7 @@ type AcceptResponse struct {
 	Details   string `json:"details,omitempty"`
 }
 
-func (c Client) Accept(ctx context.Context, id, nonce string) (AcceptResponse, error) {
+func (c *Client) Accept(ctx context.Context, id, nonce string) (AcceptResponse, error) {
 	request := Request{
 		Posts: false,
 		Path:  "ajaxop",
@@ -279,7 +279,7 @@ type DeclineResponse struct {
 	Details   string `json:"details,omitempty"`
 }
 
-func (c Client) Decline(ctx context.Context, id, nonce string) (DeclineResponse, error) {
+func (c *Client) Decline(ctx context.Context, id, nonce string) (DeclineResponse, error) {
 	request := Request{
 		Posts: false,
 		Path:  "ajaxop",

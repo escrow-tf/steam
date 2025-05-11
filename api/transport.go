@@ -72,7 +72,7 @@ type DeviceDetails struct {
 
 const BaseURL = "https://api.steampowered.com"
 
-type SteamRequest interface {
+type Request interface {
 	Retryable() bool
 	RequiresApiKey() bool
 	Method() string
@@ -81,13 +81,19 @@ type SteamRequest interface {
 	Headers() (http.Header, error)
 }
 
-type Transport struct {
+type Transport interface {
+	CookieJar() http.CookieJar
+	Send(ctx context.Context, request Request, response any) error
+	HttpClient() *http.Client
+}
+
+type HttpTransport struct {
 	webApiKey   string
 	client      *http.Client
 	retryClient *retryablehttp.Client
 }
 
-func NewTransport(webApiKey string) *Transport {
+func NewTransport(webApiKey string) *HttpTransport {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		panic("Failed to create cookie jar, which should never happen as cookiejar.New does not return any errors")
@@ -113,19 +119,19 @@ func NewTransport(webApiKey string) *Transport {
 	retryClient := retryablehttp.NewClient()
 	retryClient.HTTPClient = httpClient
 
-	return &Transport{
+	return &HttpTransport{
 		webApiKey:   webApiKey,
 		client:      httpClient,
 		retryClient: retryClient,
 	}
 }
 
-func (c Transport) CookieJar() http.CookieJar {
+func (c HttpTransport) CookieJar() http.CookieJar {
 	return c.client.Jar
 }
 
 // Send sends a specialized HTTP Request to steam.
-func (c Transport) Send(ctx context.Context, request SteamRequest, response any) error {
+func (c HttpTransport) Send(ctx context.Context, request Request, response any) error {
 	//rv := reflect.ValueOf(response)
 	//if rv.!(rv.IsZero() || rv.IsNil()) && rv.Kind() != reflect.Pointer {
 	//	return fmt.Errorf("response type must be a pointer when not nil")
@@ -223,6 +229,6 @@ func (c Transport) Send(ctx context.Context, request SteamRequest, response any)
 	return nil
 }
 
-func (c Transport) HttpClient() *http.Client {
+func (c HttpTransport) HttpClient() *http.Client {
 	return c.client
 }
