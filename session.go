@@ -243,11 +243,11 @@ func (w *WebSession) finalizeLogin() error {
 	steamLoginSecure := fmt.Sprintf("%s||%s", w.steamId.String(), w.accessToken)
 	cookieUrl := &url.URL{Scheme: "https", Host: "steamcommunity.com", Path: "/"}
 	w.transport.CookieJar().SetCookies(cookieUrl, []*http.Cookie{
-		&http.Cookie{
+		{
 			Name:  "sessionid",
 			Value: string(sessionIdBytes),
 		},
-		&http.Cookie{
+		{
 			Name:  "steamLoginSecure",
 			Value: url.QueryEscape(steamLoginSecure),
 		},

@@ -94,11 +94,11 @@ func NewTransport(webApiKey string) *Transport {
 
 	cookieUrl := &url.URL{Scheme: "https", Host: "steamcommunity.com", Path: "/"}
 	jar.SetCookies(cookieUrl, []*http.Cookie{
-		&http.Cookie{
+		{
 			Name:  "mobileClient",
 			Value: "android",
 		},
-		&http.Cookie{
+		{
 			Name:  "mobileClientVersion",
 			Value: "777777 3.0.0",
 		},
