@@ -28,7 +28,12 @@ type AccountState struct {
 	totpState   *totp.State
 }
 
-func NewAccountState(accountName string, password string, sharedSecret string, identitySecret string) (*AccountState, error) {
+func NewAccountState(
+	accountName string,
+	password string,
+	sharedSecret string,
+	identitySecret string,
+) (*AccountState, error) {
 	state, err := totp.NewState(sharedSecret, identitySecret)
 	if err != nil {
 		return nil, fmt.Errorf("NewAccountState failed %v", err)
@@ -98,7 +103,12 @@ func Authenticate(ctx context.Context, accountState *AccountState, webApiKey str
 		GamingDeviceType: auth.DefaultGamingDeviceType,
 	}
 
-	sessionResponse, err := authClient.StartSessionWithCredentials(ctx, accountState.accountName, encryptedPassword, deviceDetails)
+	sessionResponse, err := authClient.StartSessionWithCredentials(
+		ctx,
+		accountState.accountName,
+		encryptedPassword,
+		deviceDetails,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("StartSessionWithCredentials failed %v", err)
 	}

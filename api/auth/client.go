@@ -106,7 +106,11 @@ type EncryptedPassword struct {
 
 // EncryptAccountPassword
 // Retrieves the RSA key for the specified accountName, and encrypted the given password using the RSA key.
-func (c *Client) EncryptAccountPassword(ctx context.Context, accountName string, password string) (EncryptedPassword, error) {
+func (c *Client) EncryptAccountPassword(
+	ctx context.Context,
+	accountName string,
+	password string,
+) (EncryptedPassword, error) {
 	publicKey, err := c.GetPublicRsaKey(ctx, accountName)
 	if err != nil {
 		return EncryptedPassword{}, fmt.Errorf("GetPublicRsaKey failed: %v", err)
@@ -238,7 +242,12 @@ type StartSessionResponse struct {
 	} `json:"response"`
 }
 
-func (c *Client) StartSessionWithCredentials(ctx context.Context, accountName string, password EncryptedPassword, deviceDetails DeviceDetails) (StartSessionResponse, error) {
+func (c *Client) StartSessionWithCredentials(
+	ctx context.Context,
+	accountName string,
+	password EncryptedPassword,
+	deviceDetails DeviceDetails,
+) (StartSessionResponse, error) {
 	request := StartSessionRequest{
 		AccountName:         accountName,
 		EncryptedPassword:   password.Base64,
@@ -292,7 +301,12 @@ func (r UpdateSessionWithSteamGuardCodeRequest) Url() string {
 	return fmt.Sprintf("%v/IAuthenticationService/UpdateAuthSessionWithSteamGuardCode/v1/", api.BaseURL)
 }
 
-func (c *Client) SubmitSteamGuardCode(ctx context.Context, clientID string, steamID steamid.SteamID, code string) error {
+func (c *Client) SubmitSteamGuardCode(
+	ctx context.Context,
+	clientID string,
+	steamID steamid.SteamID,
+	code string,
+) error {
 	if !steamID.IsValidIndividual() {
 		return fmt.Errorf("steamID is not valid individual: %v", steamID.String())
 	}
@@ -354,7 +368,11 @@ type PollSessionStatusResponse struct {
 	} `json:"response"`
 }
 
-func (c *Client) PollSessionStatus(ctx context.Context, clientID string, requestID string) (PollSessionStatusResponse, error) {
+func (c *Client) PollSessionStatus(
+	ctx context.Context,
+	clientID string,
+	requestID string,
+) (PollSessionStatusResponse, error) {
 	request := PollSessionStatusRequest{
 		ClientID:  clientID,
 		RequestID: requestID,
@@ -408,7 +426,11 @@ type GenerateAccessTokenResponse struct {
 	} `json:"response"`
 }
 
-func (c *Client) GenerateAccessTokenForApp(ctx context.Context, refreshToken string, renew bool) (GenerateAccessTokenResponse, error) {
+func (c *Client) GenerateAccessTokenForApp(
+	ctx context.Context,
+	refreshToken string,
+	renew bool,
+) (GenerateAccessTokenResponse, error) {
 	jwt, err := DecodeSimpleJwt(refreshToken)
 	if err != nil {
 		return GenerateAccessTokenResponse{}, err

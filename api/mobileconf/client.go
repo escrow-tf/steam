@@ -36,7 +36,12 @@ type Client struct {
 	transport *api.HttpTransport
 }
 
-func NewClient(totpState *totp.State, steamID steamid.SteamID, twoFactorClient *twofactor.Client, transport *api.HttpTransport) (*Client, error) {
+func NewClient(
+	totpState *totp.State,
+	steamID steamid.SteamID,
+	twoFactorClient *twofactor.Client,
+	transport *api.HttpTransport,
+) (*Client, error) {
 	return &Client{
 		totpState: totpState,
 		steamID:   steamID,
@@ -137,14 +142,24 @@ func (c *Client) SendMobileConfRequest(ctx context.Context, request Request, res
 	var httpRequestErr error
 	if request.Posts {
 		requestUrl := fmt.Sprintf("https://steamcommunity.com/mobileconf/%s", request.Path)
-		httpRequest, httpRequestErr = http.NewRequestWithContext(ctx, http.MethodPost, requestUrl, strings.NewReader(parameters.Encode()))
+		httpRequest, httpRequestErr = http.NewRequestWithContext(
+			ctx,
+			http.MethodPost,
+			requestUrl,
+			strings.NewReader(parameters.Encode()),
+		)
 		if httpRequestErr == nil {
 			httpRequest.Header.Add("Content-Type", api.FormContentType)
 		}
 	} else {
 		queryString := parameters.Encode()
 		requestUrl := fmt.Sprintf("https://steamcommunity.com/mobileconf/%s?%s", request.Path, queryString)
-		httpRequest, httpRequestErr = http.NewRequestWithContext(ctx, http.MethodGet, requestUrl, strings.NewReader(parameters.Encode()))
+		httpRequest, httpRequestErr = http.NewRequestWithContext(
+			ctx,
+			http.MethodGet,
+			requestUrl,
+			strings.NewReader(parameters.Encode()),
+		)
 	}
 
 	if httpRequestErr != nil {

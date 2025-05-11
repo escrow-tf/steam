@@ -120,7 +120,13 @@ type Action struct {
 	Name string `json:"name"`
 }
 
-func (c *Client) GetPlayerInventory(ctx context.Context, steamID steamid.SteamID, appID, contextID, language string, count uint, start uint) (*PlayerInventory, error) {
+func (c *Client) GetPlayerInventory(
+	ctx context.Context,
+	steamID steamid.SteamID,
+	appID, contextID, language string,
+	count uint,
+	start uint,
+) (*PlayerInventory, error) {
 	request := PlayerInventoryRequest{
 		steamId:   steamID,
 		appId:     appID,

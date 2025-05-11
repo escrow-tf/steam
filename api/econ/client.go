@@ -14,17 +14,32 @@ type OfferState uint
 
 //goland:noinspection GoUnusedConst
 const (
-	InvalidOfferState                  OfferState = 1  // Invalid
-	ActiveOfferState                              = 2  // This trade offer has been sent, neither party has acted on it yet.
-	AcceptedOfferState                            = 3  // The trade offer was accepted by the recipient and items were exchanged.
-	CounteredOfferState                           = 4  // The recipient made a counter-offer
-	ExpiredOfferState                             = 5  // The trade offer was not accepted before the expiration date
-	CanceledOfferState                            = 6  // The sender cancelled the offer
-	DeclinedOfferState                            = 7  // The recipient declined the offer
-	InvalidItemsOfferState                        = 8  // Some of the items in the offer are no longer available (indicated by the missing flag in the output)
-	CreatedNeedsConfirmationOfferState            = 9  // The offer hasn't been sent yet and is awaiting email/mobile confirmation. The offer is only visible to the sender.
-	CanceledBySecondFactorOfferState              = 10 // Either party canceled the offer via email/mobile. The offer is visible to both parties, even if the sender canceled it before it was sent.
-	InEscrowOfferState                            = 11 // The trade has been placed on hold. The items involved in the trade have all been removed from both parties' inventories and will be automatically delivered in the future.
+	// InvalidOfferState - Invalid
+	InvalidOfferState OfferState = 1
+	// ActiveOfferState - This trade offer has been sent, neither party has acted on it yet.
+	ActiveOfferState = 2
+	// AcceptedOfferState - The trade offer was accepted by the recipient and items were exchanged.
+	AcceptedOfferState = 3
+	// CounteredOfferState - The recipient made a counter-offer
+	CounteredOfferState = 4
+	// ExpiredOfferState - The trade offer was not accepted before the expiration date
+	ExpiredOfferState = 5
+	// CanceledOfferState - The sender cancelled the offer
+	CanceledOfferState = 6
+	// DeclinedOfferState - The recipient declined the offer
+	DeclinedOfferState = 7
+	// InvalidItemsOfferState - Some of the items in the offer are no longer available (indicated by the
+	// missing flag in the output)
+	InvalidItemsOfferState = 8
+	// CreatedNeedsConfirmationOfferState - The offer hasn't been sent yet and is awaiting email/mobile
+	// confirmation. The offer is only visible to the sender.
+	CreatedNeedsConfirmationOfferState = 9
+	// CanceledBySecondFactorOfferState - Either party canceled the offer via email/mobile. The offer is
+	// visible to both parties, even if the sender canceled it before it was sent.
+	CanceledBySecondFactorOfferState = 10
+	// InEscrowOfferState - The trade has been placed on hold. The items involved in the trade have all
+	// been removed from both parties' inventories and will be automatically delivered in the future.
+	InEscrowOfferState = 11
 )
 
 type OfferConfirmationMethod uint
@@ -168,7 +183,11 @@ type GetTradeOffersResponse struct {
 	Descriptions []*community.Description `json:"descriptions"`
 }
 
-func (c *Client) GetTradeOffers(ctx context.Context, getSent, getReceived, getDescriptions, activeOnly, historicalOnly bool, historicalCutoff uint32) (*GetTradeOffersResponse, error) {
+func (c *Client) GetTradeOffers(
+	ctx context.Context,
+	getSent, getReceived, getDescriptions, activeOnly, historicalOnly bool,
+	historicalCutoff uint32,
+) (*GetTradeOffersResponse, error) {
 	request := GetTradeOffersRequest{
 		getSent:          getSent,
 		getReceived:      getReceived,
