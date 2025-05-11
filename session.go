@@ -8,7 +8,9 @@ import (
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/api/auth"
 	"github.com/escrow-tf/steam/api/community"
+	"github.com/escrow-tf/steam/api/econ"
 	"github.com/escrow-tf/steam/api/mobileconf"
+	"github.com/escrow-tf/steam/api/tf2econ"
 	"github.com/escrow-tf/steam/api/tradeoffer"
 	"github.com/escrow-tf/steam/api/twofactor"
 	"github.com/escrow-tf/steam/steamid"
@@ -54,10 +56,12 @@ type WebSession struct {
 	state            *AccountState
 	transport        *api.HttpTransport
 	authClient       *auth.Client
+	communityClient  *community.Client
+	econClient       *econ.Client
 	mobileConfClient *mobileconf.Client
+	tf2EconClient    *tf2econ.Client
 	tradeOfferClient *tradeoffer.Client
 	twoFactorClient  *twofactor.Client
-	communityClient  *community.Client
 
 	clientId        string
 	requestId       string
@@ -68,7 +72,7 @@ type WebSession struct {
 	refreshInterval int
 }
 
-func (w *WebSession) Transport() *api.HttpTransport {
+func (w *WebSession) Transport() api.Transport {
 	return w.transport
 }
 
@@ -284,7 +288,7 @@ func (w *WebSession) SteamId() steamid.SteamID {
 	return w.steamId
 }
 
-func GetSessionId(Transport api.Transport) (string, error) {
+func GetSessionId(transport api.Transport) (string, error) {
 	steamUrl := &url.URL{Scheme: "https", Host: "steamcommunity.com", Path: "/"}
 	steamCookies := transport.CookieJar().Cookies(steamUrl)
 	for _, cookie := range steamCookies {
@@ -300,14 +304,22 @@ func (w *WebSession) SessionId() (string, error) {
 	return GetSessionId(w.transport)
 }
 
+func (w *WebSession) CommunityClient() community.Api {
+	return w.communityClient
+}
+
+func (w *WebSession) EconClient() econ.Api {
+	return w.econClient
+}
+
 func (w *WebSession) MobileConfClient() mobileconf.Api {
 	return w.mobileConfClient
 }
 
-func (w *WebSession) TradeOfferClient() tradeoffer.Api {
-	return w.tradeOfferClient
+func (w *WebSession) Tf2EconClient() tf2econ.Api {
+	return w.tf2EconClient
 }
 
-func (w *WebSession) CommunityClient() community.Api {
-	return w.communityClient
+func (w *WebSession) TradeOfferClient() tradeoffer.Api {
+	return w.tradeOfferClient
 }
