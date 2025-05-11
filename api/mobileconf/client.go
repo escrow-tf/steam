@@ -33,14 +33,14 @@ type Client struct {
 	steamID   steamid.SteamID
 	client    *http.Client
 	twoFactor *twofactor.Client
-	Transport api.Transport
+	transport api.Transport
 }
 
 func NewClient(
 	totpState *totp.State,
 	steamID steamid.SteamID,
 	twoFactorClient *twofactor.Client,
-	Transport api.Transport,
+	transport api.Transport,
 ) (*Client, error) {
 	return &Client{
 		totpState: totpState,
