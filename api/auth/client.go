@@ -125,6 +125,7 @@ func (c Client) EncryptAccountPassword(ctx context.Context, accountName string, 
 
 type Persistence int
 
+//goland:noinspection GoUnusedConst
 const (
 	InvalidSessionPersistence    Persistence = -1
 	EphemeralSessionPersistence  Persistence = 0
@@ -133,6 +134,7 @@ const (
 
 type PlatformType int
 
+//goland:noinspection GoUnusedConst
 const (
 	UnknownPlatformType PlatformType = iota
 	SteamClientPlatformType
@@ -149,6 +151,7 @@ const (
 
 type GuardType int
 
+//goland:noinspection GoUnusedConst
 const (
 	UnknownGuardType GuardType = iota
 	NoneGuardType

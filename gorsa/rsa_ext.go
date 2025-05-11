@@ -11,6 +11,7 @@ import (
 	"math/big"
 )
 
+//goland:noinspection GoUnusedGlobalVariable
 var (
 	ErrDataToLarge     = errors.New("message too long for RSA public key size")
 	ErrDataLen         = errors.New("data length error")
@@ -57,6 +58,8 @@ func getPriKey(privateKey []byte) (*rsa.PrivateKey, error) {
 }
 
 // 公钥加密或解密byte
+//
+//goland:noinspection GoUnusedFunction
 func pubKeyByte(pub *rsa.PublicKey, in []byte, isEncrypted bool) ([]byte, error) {
 	k := (pub.N.BitLen() + 7) / 8
 	if isEncrypted {
@@ -79,6 +82,8 @@ func pubKeyByte(pub *rsa.PublicKey, in []byte, isEncrypted bool) ([]byte, error)
 }
 
 // 私钥加密或解密byte
+//
+//goland:noinspection GoUnusedFunction
 func priKeyByte(pri *rsa.PrivateKey, in []byte, isEncrypted bool) ([]byte, error) {
 	k := (pri.N.BitLen() + 7) / 8
 	if isEncrypted {
@@ -230,6 +235,8 @@ var bigZero = big.NewInt(0)
 var bigOne = big.NewInt(1)
 
 // 从crypto/rsa复制
+//
+//goland:noinspection GoUnusedFunction
 func encrypt(c *big.Int, pub *rsa.PublicKey, m *big.Int) *big.Int {
 	e := big.NewInt(int64(pub.E))
 	c.Exp(m, e, pub.N)
@@ -261,9 +268,9 @@ func decrypt(random io.Reader, privateKey *rsa.PrivateKey, c *big.Int) (m *big.I
 			}
 		}
 		bigE := big.NewInt(int64(privateKey.E))
-		rpowe := new(big.Int).Exp(r, bigE, privateKey.N)
+		rPowE := new(big.Int).Exp(r, bigE, privateKey.N)
 		cCopy := new(big.Int).Set(c)
-		cCopy.Mul(cCopy, rpowe)
+		cCopy.Mul(cCopy, rPowE)
 		cCopy.Mod(cCopy, privateKey.N)
 		c = cCopy
 	}
@@ -313,6 +320,8 @@ func copyWithLeftPad(dest, src []byte) {
 }
 
 // 从crypto/rsa复制
+//
+//goland:noinspection GoUnusedFunction
 func nonZeroRandomBytes(s []byte, rand io.Reader) (err error) {
 	_, err = io.ReadFull(rand, s)
 	if err != nil {

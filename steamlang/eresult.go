@@ -9,6 +9,7 @@ import (
 
 type EResult int
 
+//goland:noinspection GoUnusedConst
 const (
 	InvalidResult                                 EResult = 0
 	OKResult                                      EResult = 1

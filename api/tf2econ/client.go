@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
-	"github.com/hashicorp/go-retryablehttp"
-	"io"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -85,18 +82,6 @@ type Attribute struct {
 type EquipInfo struct {
 	Class int `json:"class"`
 	Slot  int `json:"slot"`
-}
-
-func closeBody(body io.ReadCloser) {
-	err := body.Close()
-	if err != nil {
-		log.Printf("error closing http response body: %s", err)
-	}
-}
-
-func InitializeRequestHeaders(request *retryablehttp.Request) {
-	request.Header.Add("Accept", "application/json")
-	request.Header.Add("User-Agent", "okhttp/3.12.12")
 }
 
 func (client *Client) GetPlayerItems(ctx context.Context, steamId steamid.SteamID) (*PlayerItemsResponse, error) {

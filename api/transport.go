@@ -20,6 +20,7 @@ type GuardType int
 type Persistence int
 type PlatformType int
 
+//goland:noinspection GoUnusedConst
 const (
 	NoneRenewalType TokenRenewalType = iota
 	AllowRenewalType

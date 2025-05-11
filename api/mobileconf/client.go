@@ -20,6 +20,7 @@ import (
 
 type ConfirmationType int
 
+//goland:noinspection GoUnusedConst
 const (
 	InvalidConfirmationType ConfirmationType = iota
 	TradeConfirmationType

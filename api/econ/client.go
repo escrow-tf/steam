@@ -12,6 +12,7 @@ import (
 
 type OfferState uint
 
+//goland:noinspection GoUnusedConst
 const (
 	InvalidOfferState                  OfferState = 1  // Invalid
 	ActiveOfferState                              = 2  // This trade offer has been sent, neither party has acted on it yet.
@@ -28,6 +29,7 @@ const (
 
 type OfferConfirmationMethod uint
 
+//goland:noinspection GoUnusedConst
 const (
 	InvalidOfferConfirmationMethod   OfferConfirmationMethod = 0
 	EmailOfferConfirmationMethod                             = 1

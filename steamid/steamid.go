@@ -10,6 +10,7 @@ type Universe uint
 type Type uint
 type Instance uint
 
+//goland:noinspection GoUnusedConst
 const (
 	UniverseInvalid Universe = iota
 	UniversePublic
@@ -18,6 +19,7 @@ const (
 	UniverseDev
 )
 
+//goland:noinspection GoUnusedConst
 const (
 	TypeInvalid Type = iota
 	TypeIndividual
@@ -32,6 +34,7 @@ const (
 	TypeAnonUser
 )
 
+//goland:noinspection GoUnusedConst
 const (
 	InstanceAll Instance = iota
 	InstanceDesktop
@@ -39,6 +42,7 @@ const (
 	InstanceWeb
 )
 
+//goland:noinspection GoUnusedConst
 const (
 	AccountIDMask       uint64 = 0xFFFFFFFF
 	AccountInstanceMask uint64 = 0x000FFFFF
