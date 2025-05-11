@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-type SessionIdFunc func(transport *api.HttpTransport) (string, error)
+type SessionIdFunc func(Transport api.Transport) (string, error)
 
 type Client struct {
 	Transport     *api.HttpTransport

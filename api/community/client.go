@@ -13,7 +13,7 @@ import (
 const BaseURL = "https://www.steamcommunity.com"
 
 type Client struct {
-	Transport *api.HttpTransport
+	Transport api.Transport
 }
 
 type PlayerInventoryRequest struct {

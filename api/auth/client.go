@@ -16,7 +16,7 @@ import (
 )
 
 type Client struct {
-	Transport *api.HttpTransport
+	Transport api.Transport
 }
 
 type GetRsaKeyRequest struct {

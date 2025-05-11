@@ -69,7 +69,7 @@ type TradeOffer struct {
 }
 
 type Client struct {
-	Transport *api.HttpTransport
+	Transport api.Transport
 }
 
 type GetTradeOfferRequest struct {

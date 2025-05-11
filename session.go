@@ -284,7 +284,7 @@ func (w *WebSession) SteamId() steamid.SteamID {
 	return w.steamId
 }
 
-func GetSessionId(transport *api.HttpTransport) (string, error) {
+func GetSessionId(Transport api.Transport) (string, error) {
 	steamUrl := &url.URL{Scheme: "https", Host: "steamcommunity.com", Path: "/"}
 	steamCookies := transport.CookieJar().Cookies(steamUrl)
 	for _, cookie := range steamCookies {
