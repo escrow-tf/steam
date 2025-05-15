@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/escrow-tf/steam/api"
+	"github.com/escrow-tf/steam/steamlang"
 	"net/http"
 	"net/url"
 	"time"
