@@ -79,6 +79,7 @@ type Request interface {
 	Url() string
 	Values() (url.Values, error)
 	Headers() (http.Header, error)
+	EnsureResponseSuccess(httpResponse *http.Response) error
 }
 
 type Transport interface {
@@ -206,7 +207,7 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 		}
 	}(httpResponse.Body)
 
-	if err := steamlang.EnsureSuccessResponse(httpResponse); err != nil {
+	if err := request.EnsureResponseSuccess(httpResponse); err != nil {
 		return err
 	}
 

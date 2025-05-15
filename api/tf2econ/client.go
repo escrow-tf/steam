@@ -19,6 +19,10 @@ type PlayerItemsRequest struct {
 	steamId steamid.SteamID
 }
 
+func (p PlayerItemsRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
+	return steamlang.EnsureSuccessResponse(httpResponse)
+}
+
 func (p PlayerItemsRequest) Headers() (http.Header, error) {
 	return nil, nil
 }

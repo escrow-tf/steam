@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
+	"github.com/escrow-tf/steam/steamlang"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,6 +24,10 @@ type PlayerInventoryRequest struct {
 	language  string
 	count     uint
 	start     uint
+}
+
+func (p PlayerInventoryRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
+	return steamlang.EnsureSuccessResponse(httpResponse)
 }
 
 func (p PlayerInventoryRequest) Headers() (http.Header, error) {

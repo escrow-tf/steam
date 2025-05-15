@@ -68,6 +68,10 @@ type Request struct {
 	totpTime time.Time
 }
 
+func (r Request) EnsureResponseSuccess(httpResponse *http.Response) error {
+	return steamlang.EnsureSuccessResponse(httpResponse)
+}
+
 func (r Request) Headers() (http.Header, error) {
 	return nil, nil
 }

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
+	"github.com/escrow-tf/steam/steamlang"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 type SessionIdFunc func(transport api.Transport) (string, error)
@@ -26,6 +28,10 @@ type ActionRequest struct {
 	id        uint64
 	verb      string
 	sessionId string
+}
+
+func (t ActionRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
+	return steamlang.EnsureSuccessResponse(httpResponse)
 }
 
 func (t ActionRequest) Retryable() bool {
@@ -122,6 +128,14 @@ type CreateRequest struct {
 	PartnerToken     string
 }
 
+func (c CreateRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
+	// Create will check strError in this case
+	if httpResponse.StatusCode == 500 {
+		return nil
+	}
+	return steamlang.EnsureSuccessResponse(httpResponse)
+}
+
 func (c CreateRequest) Retryable() bool {
 	return false
 }
@@ -194,18 +208,18 @@ func (c *Client) Create(
 		},
 	}
 
-	offerJson, err := json.Marshal(offer)
-	if err != nil {
-		return CreateResponse{}, fmt.Errorf("error marshalling Offer: %v", err)
+	offerJson, offerJsonErr := json.Marshal(offer)
+	if offerJsonErr != nil {
+		return CreateResponse{}, fmt.Errorf("error marshalling Offer: %v", offerJsonErr)
 	}
 
 	createParams := CreateParams{
 		AccessToken: partnerToken,
 	}
 
-	createParamsJson, err := json.Marshal(createParams)
-	if err != nil {
-		return CreateResponse{}, fmt.Errorf("error marshalling CreateParams: %v", err)
+	createParamsJson, createParamsJsonErr := json.Marshal(createParams)
+	if createParamsJsonErr != nil {
+		return CreateResponse{}, fmt.Errorf("error marshalling CreateParams: %v", createParamsJsonErr)
 	}
 
 	request := CreateRequest{
@@ -224,13 +238,53 @@ func (c *Client) Create(
 		return CreateResponse{}, fmt.Errorf("error creating new Offer: %v", sendErr)
 	}
 
-	// Error code descriptions:
-	// 15	invalid trade access token
-	// 16	timeout
-	// 20	wrong contextid
-	// 25	can't send more offers until some is accepted/cancelled...
-	// 26	object is not in our inventory
-	// error code names are in steamlang/enums.go EResult_name
+	// There are a couple of error formats we're likely to receive back:
+	// A generic error message with an error number at the end:
+	//  {"strError":"There was an error sending your trade offer.  Please try again later. (ERROR NUMBER)"}
+	//
+	// A specific error message:
+	//  {"strError":"You have sent too many trade offers, or have too many outstanding trade offers with
+	//  snuppy. Please cancel some before sending more."}
+	//
+	// In both of these cases, steam returns a 500 error code despite these clearly being 4xx errors, and doesn't
+	// give us an EResult header in the response.
+
+	if strings.HasPrefix(response.Error, "There was an error sending your trade offer.  Please try again later. (") {
+		leftParenIdx := strings.Index(response.Error, "(")
+		rightParenIdx := strings.Index(response.Error, ")")
+		eResultString := response.Error[leftParenIdx:rightParenIdx]
+		eResult, err := strconv.ParseInt(eResultString, 10, 32)
+		if err != nil {
+			return CreateResponse{}, fmt.Errorf("error sending offer: %v", response.Error)
+		}
+
+		switch steamlang.EResult(eResult) {
+		case steamlang.InvalidStateResult:
+			return CreateResponse{}, InvalidStateError
+		case steamlang.AccessDeniedResult:
+			return CreateResponse{}, AccessDeniedError
+		case steamlang.TimeoutResult:
+			return CreateResponse{}, TimeoutError
+		case steamlang.ServiceUnavailableResult:
+			return CreateResponse{}, ServiceUnavailableError
+		case steamlang.LimitExceededResult:
+			return CreateResponse{}, TooManyTradeOffersError
+		case steamlang.RevokedResult:
+			return CreateResponse{}, ItemsDontExistError
+		case steamlang.AlreadyRedeemedResult:
+			return CreateResponse{}, ChangedPersonaNameRecentlyError
+		}
+
+		return CreateResponse{}, steamlang.EResultError(steamlang.EResult(eResult))
+	}
+
+	if strings.HasPrefix(
+		response.Error,
+		"You have sent too many trade offers, or have too many outstanding trade offers with",
+	) {
+		return CreateResponse{}, TooManyTradeOffersError
+	}
+
 	if response.Error != "" {
 		return CreateResponse{}, fmt.Errorf("error sending offer: %v", response.Error)
 	}

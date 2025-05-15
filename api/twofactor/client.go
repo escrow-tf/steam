@@ -37,6 +37,10 @@ func (c *Client) AlignTime(ctx context.Context) error {
 
 type QueryTimeRequest struct{}
 
+func (q QueryTimeRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
+	return steamlang.EnsureSuccessResponse(httpResponse)
+}
+
 func (q QueryTimeRequest) Headers() (http.Header, error) {
 	return nil, nil
 }

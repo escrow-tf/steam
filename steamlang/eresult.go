@@ -140,6 +140,11 @@ const (
 	PhoneNumberIsVOIPResult                       EResult = 127
 )
 
+func EResultError(e EResult) error {
+	// TODO: better way to represent eresult errors
+	return fmt.Errorf("EResult: %d", e)
+}
+
 func EnsureSuccessResponse(response *http.Response) error {
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return fmt.Errorf("BeginAuthSessionViaCredentials request failed with status %v", response.StatusCode)
