@@ -2,6 +2,7 @@ package tradeoffer
 
 import (
 	"context"
+
 	"github.com/escrow-tf/steam/steamid"
 )
 

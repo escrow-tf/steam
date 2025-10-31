@@ -3,11 +3,12 @@
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
+
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/steamlang"
-	"net/http"
-	"net/url"
 )
 
 const WebApiBaseUrl = "https://api.steampowered.com"

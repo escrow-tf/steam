@@ -5,6 +5,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/api/auth"
 	"github.com/escrow-tf/steam/api/community"
@@ -16,12 +23,6 @@ import (
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/totp"
 	"github.com/golang-jwt/jwt/v5"
-	"log"
-	"net/http"
-	"net/url"
-	"os"
-	"strings"
-	"time"
 )
 
 type AccountState struct {

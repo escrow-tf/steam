@@ -2,6 +2,7 @@ package tf2econ
 
 import (
 	"context"
+
 	"github.com/escrow-tf/steam/steamid"
 )
 

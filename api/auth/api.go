@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+
 	"github.com/escrow-tf/steam/steamid"
 )
 

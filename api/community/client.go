@@ -3,12 +3,13 @@
 import (
 	"context"
 	"fmt"
-	"github.com/escrow-tf/steam/api"
-	"github.com/escrow-tf/steam/steamid"
-	"github.com/escrow-tf/steam/steamlang"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/escrow-tf/steam/api"
+	"github.com/escrow-tf/steam/steamid"
+	"github.com/escrow-tf/steam/steamlang"
 )
 
 const BaseURL = "https://www.steamcommunity.com"

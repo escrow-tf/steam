@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/escrow-tf/steam/api"
-	"github.com/escrow-tf/steam/steamid"
-	"github.com/escrow-tf/steam/steamlang"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/escrow-tf/steam/api"
+	"github.com/escrow-tf/steam/steamid"
+	"github.com/escrow-tf/steam/steamlang"
 )
 
 type SessionIdFunc func(transport api.Transport) (string, error)

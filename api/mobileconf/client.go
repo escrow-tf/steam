@@ -5,17 +5,18 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/escrow-tf/steam/api"
-	"github.com/escrow-tf/steam/api/twofactor"
-	"github.com/escrow-tf/steam/steamid"
-	"github.com/escrow-tf/steam/steamlang"
-	"github.com/escrow-tf/steam/totp"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/escrow-tf/steam/api"
+	"github.com/escrow-tf/steam/api/twofactor"
+	"github.com/escrow-tf/steam/steamid"
+	"github.com/escrow-tf/steam/steamlang"
+	"github.com/escrow-tf/steam/totp"
 )
 
 type ConfirmationType int

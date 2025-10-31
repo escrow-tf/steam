@@ -2,6 +2,7 @@ package community
 
 import (
 	"context"
+
 	"github.com/escrow-tf/steam/steamid"
 )
 

@@ -6,14 +6,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/escrow-tf/steam/api"
-	"github.com/escrow-tf/steam/gorsa"
-	"github.com/escrow-tf/steam/steamid"
-	"github.com/escrow-tf/steam/steamlang"
 	"math/big"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/escrow-tf/steam/api"
+	"github.com/escrow-tf/steam/gorsa"
+	"github.com/escrow-tf/steam/steamid"
+	"github.com/escrow-tf/steam/steamlang"
 )
 
 type Client struct {

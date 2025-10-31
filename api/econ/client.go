@@ -3,12 +3,13 @@
 import (
 	"context"
 	"fmt"
-	"github.com/escrow-tf/steam/api"
-	"github.com/escrow-tf/steam/api/community"
-	"github.com/escrow-tf/steam/steamlang"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/escrow-tf/steam/api"
+	"github.com/escrow-tf/steam/api/community"
+	"github.com/escrow-tf/steam/steamlang"
 )
 
 type OfferState uint
