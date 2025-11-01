@@ -296,3 +296,133 @@ func (c *Client) Create(
 
 	return response, nil
 }
+
+type PartnerInventoryRequest struct {
+	SessionId string
+	AppId     uint64
+	ContextId string
+
+	PartnerSteamId steamid.SteamID
+	PartnerToken   string
+}
+
+func (p PartnerInventoryRequest) Retryable() bool {
+	return true
+}
+
+func (p PartnerInventoryRequest) RequiresApiKey() bool {
+	return false
+}
+
+func (p PartnerInventoryRequest) Method() string {
+	return http.MethodGet
+}
+
+func (p PartnerInventoryRequest) Url() string {
+	return "https://steamcommunity.com/tradeoffer/new/partnerinventory/"
+}
+
+func (p PartnerInventoryRequest) Values() (url.Values, error) {
+	values := make(url.Values)
+	values.Add("sessionid", p.SessionId)
+	values.Add("partner", p.PartnerSteamId.String())
+	values.Add("appid", url.QueryEscape(strconv.FormatUint(p.AppId, 10)))
+	values.Add("contextid", url.QueryEscape(p.ContextId))
+	return values, nil
+}
+
+func (p PartnerInventoryRequest) Headers() (http.Header, error) {
+	referer := fmt.Sprintf(
+		"https://steamcommunity.com/tradeoffer/new/?partner=%s&token=%s",
+		p.PartnerSteamId.AccountId(),
+		url.QueryEscape(p.PartnerToken),
+	)
+
+	return http.Header{
+		"Referer": []string{referer},
+	}, nil
+}
+
+func (p PartnerInventoryRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
+	return steamlang.EnsureSuccessResponse(httpResponse)
+}
+
+type PartnerItem struct {
+	Id          string `json:"id"`
+	ClassId     string `json:"classid"`
+	InstanceId  string `json:"instanceid"`
+	Amount      string `json:"amount"`
+	HideInChina bool   `json:"hide_in_china"`
+	Position    int    `json:"pos"`
+}
+
+type PartnerDescription struct {
+	AppId                       string                   `json:"appid"`
+	ClassId                     string                   `json:"classid"`
+	InstanceId                  string                   `json:"instanceid"`
+	IconUrl                     string                   `json:"icon_url"`
+	IconDragUrl                 string                   `json:"icon_drag_url"`
+	Name                        string                   `json:"name"`
+	MarketHashName              string                   `json:"market_hash_name"`
+	MarketName                  string                   `json:"market_name"`
+	NameColor                   string                   `json:"name_color"`
+	BackgroundColor             string                   `json:"background_color"`
+	Type                        string                   `json:"type"`
+	Tradable                    int                      `json:"tradable"`
+	Marketable                  int                      `json:"marketable"`
+	Commodity                   int                      `json:"commodity"`
+	MarketTradableRestriction   string                   `json:"market_tradable_restriction"`
+	MarketMarketableRestriction string                   `json:"market_marketable_restriction"`
+	DescriptionLines            []PartnerDescriptionLine `json:"descriptions"`
+	Tags                        []PartnerDescriptionTag  `json:"tags"`
+}
+
+type PartnerDescriptionLine struct {
+	Type  string `json:"type"`
+	Value string `json:"value"`
+	Name  string `json:"name"`
+	Color string `json:"color,omitempty"`
+}
+
+type PartnerDescriptionTag struct {
+	InternalName string `json:"internal_name"`
+	Name         string `json:"name"`
+	Category     string `json:"category"`
+	CategoryName string `json:"category_name"`
+}
+
+type PartnerInventoryResponse struct {
+	Success      bool                          `json:"success"`
+	Inventory    map[string]PartnerItem        `json:"rgInventory"`
+	Descriptions map[string]PartnerDescription `json:"rgDescriptions"`
+	More         bool                          `json:"more"`
+	MoreStart    json.RawMessage               `json:"more_start"`
+}
+
+func (c *Client) GetPartnerInventory(
+	ctx context.Context,
+	partnerId steamid.SteamID,
+	partnerToken string,
+	appId uint64,
+	contextId string,
+) (*PartnerInventoryResponse, error) {
+	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
+	if sessionIdErr != nil {
+		return nil, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
+	}
+
+	request := &PartnerInventoryRequest{
+		SessionId:      sessionId,
+		AppId:          appId,
+		ContextId:      contextId,
+		PartnerSteamId: partnerId,
+		PartnerToken:   partnerToken,
+	}
+	var response PartnerInventoryResponse
+	sendErr := c.Transport.Send(ctx, request, &response)
+	if sendErr != nil {
+		return nil, sendErr
+	}
+
+	return &response, nil
+}

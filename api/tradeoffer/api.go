@@ -17,4 +17,12 @@ type Api interface {
 		myItems, theirItems []Item,
 		message string,
 	) (CreateResponse, error)
+
+	GetPartnerInventory(
+		ctx context.Context,
+		partnerId steamid.SteamID,
+		partnerToken string,
+		appId uint64,
+		contextId string,
+	) (*PartnerInventoryResponse, error)
 }

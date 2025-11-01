@@ -147,7 +147,7 @@ func EResultError(e EResult) error {
 
 func EnsureSuccessResponse(response *http.Response) error {
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return fmt.Errorf("BeginAuthSessionViaCredentials request failed with status %v", response.StatusCode)
+		return fmt.Errorf("request failed with status %v", response.StatusCode)
 	}
 
 	return nil
