@@ -10,6 +10,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/escrow-tf/steam/steamlang"
 	"github.com/hashicorp/go-cleanhttp"
@@ -75,6 +76,7 @@ const BaseURL = "https://api.steampowered.com"
 
 type Request interface {
 	Retryable() bool
+	CacheTTL() time.Duration
 	RequiresApiKey() bool
 	Method() string
 	Url() string
@@ -95,7 +97,12 @@ type HttpTransport struct {
 	retryClient *retryablehttp.Client
 }
 
-func NewTransport(webApiKey string) *HttpTransport {
+type HttpTransportOptions struct {
+	WebApiKey     string
+	ResponseCache CacheAdaptor
+}
+
+func NewTransport(options HttpTransportOptions) *HttpTransport {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		panic("Failed to create cookie jar, which should never happen as cookiejar.New does not return any errors")
@@ -114,7 +121,7 @@ func NewTransport(webApiKey string) *HttpTransport {
 	})
 
 	httpClient := &http.Client{
-		Transport: cleanhttp.DefaultPooledTransport(),
+		Transport: newCachingTransport(cleanhttp.DefaultPooledTransport(), options.ResponseCache),
 		Jar:       jar,
 	}
 
@@ -122,7 +129,7 @@ func NewTransport(webApiKey string) *HttpTransport {
 	retryClient.HTTPClient = httpClient
 
 	return &HttpTransport{
-		webApiKey:   webApiKey,
+		webApiKey:   options.WebApiKey,
 		client:      httpClient,
 		retryClient: retryClient,
 	}

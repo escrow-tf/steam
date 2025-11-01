@@ -69,6 +69,10 @@ type Request struct {
 	totpTime time.Time
 }
 
+func (r Request) CacheTTL() time.Duration {
+	return 0
+}
+
 func (r Request) EnsureResponseSuccess(httpResponse *http.Response) error {
 	return steamlang.EnsureSuccessResponse(httpResponse)
 }

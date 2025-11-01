@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
@@ -25,6 +26,10 @@ type PlayerInventoryRequest struct {
 	language  string
 	count     uint
 	start     uint
+}
+
+func (p PlayerInventoryRequest) CacheTTL() time.Duration {
+	return 0
 }
 
 func (p PlayerInventoryRequest) EnsureResponseSuccess(httpResponse *http.Response) error {

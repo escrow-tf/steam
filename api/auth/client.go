@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/gorsa"
@@ -23,6 +24,10 @@ type Client struct {
 
 type GetRsaKeyRequest struct {
 	accountName string
+}
+
+func (g GetRsaKeyRequest) CacheTTL() time.Duration {
+	return 0
 }
 
 func (g GetRsaKeyRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
@@ -195,6 +200,10 @@ type StartSessionRequest struct {
 	QosLevel            int
 }
 
+func (r StartSessionRequest) CacheTTL() time.Duration {
+	return 0
+}
+
 func (r StartSessionRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
 	return steamlang.EnsureSuccessResponse(httpResponse)
 }
@@ -282,6 +291,10 @@ type UpdateSessionWithSteamGuardCodeRequest struct {
 	CodeType GuardType
 }
 
+func (r UpdateSessionWithSteamGuardCodeRequest) CacheTTL() time.Duration {
+	return 0
+}
+
 func (r UpdateSessionWithSteamGuardCodeRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
 	return steamlang.EnsureSuccessResponse(httpResponse)
 }
@@ -342,6 +355,10 @@ func (c *Client) SubmitSteamGuardCode(
 type PollSessionStatusRequest struct {
 	ClientID  string
 	RequestID string
+}
+
+func (r PollSessionStatusRequest) CacheTTL() time.Duration {
+	return 0
 }
 
 func (r PollSessionStatusRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
@@ -407,6 +424,10 @@ type GenerateAccessTokenRequest struct {
 	RefreshToken string           `json:"refresh_token"`
 	SteamID      string           `json:"steamid"`
 	RenewalType  TokenRenewalType `json:"renewal_type"`
+}
+
+func (r GenerateAccessTokenRequest) CacheTTL() time.Duration {
+	return 0
 }
 
 func (r GenerateAccessTokenRequest) EnsureResponseSuccess(httpResponse *http.Response) error {

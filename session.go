@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -77,13 +78,22 @@ func (w *WebSession) Transport() api.Transport {
 	return w.transport
 }
 
-func Authenticate(ctx context.Context, accountState *AccountState, webApiKey string) (*WebSession, error) {
+type Options struct {
+	AccountState *AccountState
+	api.HttpTransportOptions
+}
+
+func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
+	if options.AccountState == nil {
+		return nil, errors.New("AccountState is required")
+	}
+
 	deviceHostName, err := os.Hostname()
 	if err != nil {
 		return nil, fmt.Errorf("os.Hostname() failed: %v", err)
 	}
 
-	webTransport := api.NewTransport(webApiKey)
+	webTransport := api.NewTransport(options.HttpTransportOptions)
 	authClient := &auth.Client{
 		Transport: webTransport,
 	}
@@ -96,7 +106,11 @@ func Authenticate(ctx context.Context, accountState *AccountState, webApiKey str
 		return nil, fmt.Errorf("twoFactorClient.AlignTime() failed: %v", alignErr)
 	}
 
-	encryptedPassword, err := authClient.EncryptAccountPassword(ctx, accountState.accountName, accountState.password)
+	encryptedPassword, err := authClient.EncryptAccountPassword(
+		ctx,
+		options.AccountState.accountName,
+		options.AccountState.password,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("EncryptPassword failed %v", err)
 	}
@@ -110,7 +124,7 @@ func Authenticate(ctx context.Context, accountState *AccountState, webApiKey str
 
 	sessionResponse, err := authClient.StartSessionWithCredentials(
 		ctx,
-		accountState.accountName,
+		options.AccountState.accountName,
 		encryptedPassword,
 		deviceDetails,
 	)
@@ -144,7 +158,7 @@ func Authenticate(ctx context.Context, accountState *AccountState, webApiKey str
 		return nil, fmt.Errorf("weak token Sub returned invalid steamid64: %v", err)
 	}
 
-	code, err := accountState.totpState.GenerateTotpCode("conf", totp.Time(0))
+	code, err := options.AccountState.totpState.GenerateTotpCode("conf", totp.Time(0))
 	if err != nil {
 		return nil, fmt.Errorf("error generating totp code failed: %v", err)
 	}
@@ -154,13 +168,18 @@ func Authenticate(ctx context.Context, accountState *AccountState, webApiKey str
 		return nil, fmt.Errorf("error submitting totp code: %v", err)
 	}
 
-	mobileConfClient, err := mobileconf.NewClient(accountState.totpState, steamID, twoFactorClient, webTransport)
+	mobileConfClient, err := mobileconf.NewClient(
+		options.AccountState.totpState,
+		steamID,
+		twoFactorClient,
+		webTransport,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("mobileconf.NewTransport failed: %v", err)
 	}
 
 	webSession := &WebSession{
-		state:            accountState,
+		state:            options.AccountState,
 		transport:        webTransport,
 		authClient:       authClient,
 		mobileConfClient: mobileConfClient,

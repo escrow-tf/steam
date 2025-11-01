@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/api/community"
@@ -79,6 +80,10 @@ type GetTradeOfferRequest struct {
 	language string
 }
 
+func (g GetTradeOfferRequest) CacheTTL() time.Duration {
+	return 0
+}
+
 func (g GetTradeOfferRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
 	return steamlang.EnsureSuccessResponse(httpResponse)
 }
@@ -137,6 +142,10 @@ type GetTradeOffersRequest struct {
 	historicalOnly   bool
 	historicalCutoff uint32
 	language         string
+}
+
+func (g GetTradeOffersRequest) CacheTTL() time.Duration {
+	return 0
 }
 
 func (g GetTradeOffersRequest) EnsureResponseSuccess(httpResponse *http.Response) error {

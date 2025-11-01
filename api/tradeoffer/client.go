@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
@@ -29,6 +30,10 @@ type ActionRequest struct {
 	id        uint64
 	verb      string
 	sessionId string
+}
+
+func (t ActionRequest) CacheTTL() time.Duration {
+	return 0
 }
 
 func (t ActionRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
@@ -127,6 +132,10 @@ type CreateRequest struct {
 	CreateParamsJson string
 	PartnerAccountId uint32
 	PartnerToken     string
+}
+
+func (c CreateRequest) CacheTTL() time.Duration {
+	return 0
 }
 
 func (c CreateRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
@@ -306,6 +315,10 @@ type PartnerInventoryRequest struct {
 	PartnerToken   string
 }
 
+func (p PartnerInventoryRequest) CacheTTL() time.Duration {
+	return 0
+}
+
 func (p PartnerInventoryRequest) Retryable() bool {
 	return true
 }
@@ -333,7 +346,7 @@ func (p PartnerInventoryRequest) Values() (url.Values, error) {
 
 func (p PartnerInventoryRequest) Headers() (http.Header, error) {
 	referer := fmt.Sprintf(
-		"https://steamcommunity.com/tradeoffer/new/?partner=%s&token=%s",
+		"https://steamcommunity.com/tradeoffer/new/?partner=%d&token=%s",
 		p.PartnerSteamId.AccountId(),
 		url.QueryEscape(p.PartnerToken),
 	)
