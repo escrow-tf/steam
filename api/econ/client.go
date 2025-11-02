@@ -108,7 +108,14 @@ func (g GetTradeOfferRequest) Url() string {
 	return fmt.Sprintf("%s/IEconService/GetTradeOffer/v1/", api.BaseURL)
 }
 
-func (g GetTradeOfferRequest) Values() (url.Values, error) {
+func (g GetTradeOfferRequest) OldValues() (url.Values, error) {
+	values := make(url.Values)
+	values.Add("tradeofferid", strconv.FormatUint(g.id, 10))
+	values.Add("language", g.language)
+	return values, nil
+}
+
+func (g GetTradeOfferRequest) Values() (interface{}, error) {
 	values := make(url.Values)
 	values.Add("tradeofferid", strconv.FormatUint(g.id, 10))
 	values.Add("language", g.language)
@@ -144,6 +151,11 @@ type GetTradeOffersRequest struct {
 	language         string
 }
 
+func (g GetTradeOffersRequest) Values() (interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (g GetTradeOffersRequest) CacheTTL() time.Duration {
 	return 0
 }
@@ -172,7 +184,7 @@ func (g GetTradeOffersRequest) Url() string {
 	return fmt.Sprintf("%s/IEconService/GetTradeOffers/v1/", api.BaseURL)
 }
 
-func (g GetTradeOffersRequest) Values() (url.Values, error) {
+func (g GetTradeOffersRequest) OldValues() (url.Values, error) {
 	values := make(url.Values)
 	values.Add("language", g.language)
 	if g.getSent {

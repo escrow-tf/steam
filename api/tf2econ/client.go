@@ -50,7 +50,13 @@ func (p PlayerItemsRequest) Url() string {
 	return fmt.Sprintf("%s/IEconItems_440/GetPlayerItems/v1/", WebApiBaseUrl)
 }
 
-func (p PlayerItemsRequest) Values() (url.Values, error) {
+func (p PlayerItemsRequest) OldValues() (url.Values, error) {
+	return url.Values{
+		"steamid": []string{p.steamId.String()},
+	}, nil
+}
+
+func (p PlayerItemsRequest) Values() (interface{}, error) {
 	return url.Values{
 		"steamid": []string{p.steamId.String()},
 	}, nil

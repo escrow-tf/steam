@@ -10,4 +10,5 @@ require (
 require (
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/rotisserie/eris v0.5.4
+	google.golang.org/protobuf v1.36.10
 )

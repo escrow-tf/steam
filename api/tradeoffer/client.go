@@ -57,7 +57,13 @@ func (t ActionRequest) Url() string {
 	return fmt.Sprintf("https://steamcommunity.com/tradeoffer/%d/%s", t.id, t.verb)
 }
 
-func (t ActionRequest) Values() (url.Values, error) {
+func (t ActionRequest) OldValues() (url.Values, error) {
+	return url.Values{
+		"sessionid": []string{t.sessionId},
+	}, nil
+}
+
+func (t ActionRequest) Values() (interface{}, error) {
 	return url.Values{
 		"sessionid": []string{t.sessionId},
 	}, nil
@@ -135,6 +141,11 @@ type CreateRequest struct {
 	PartnerToken     string
 }
 
+func (c CreateRequest) Values() (interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (c CreateRequest) CacheTTL() time.Duration {
 	return 0
 }
@@ -163,7 +174,7 @@ func (c CreateRequest) Url() string {
 	return "https://steamcommunity.com/tradeoffer/new/send"
 }
 
-func (c CreateRequest) Values() (url.Values, error) {
+func (c CreateRequest) OldValues() (url.Values, error) {
 	values := make(url.Values)
 	values.Add("sessionid", c.SessionId)
 	values.Add("serverid", c.ServerId)
@@ -316,6 +327,11 @@ type PartnerInventoryRequest struct {
 	PartnerToken   string
 }
 
+func (p PartnerInventoryRequest) Values() (interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (p PartnerInventoryRequest) CacheTTL() time.Duration {
 	return 0
 }
@@ -336,7 +352,7 @@ func (p PartnerInventoryRequest) Url() string {
 	return "https://steamcommunity.com/tradeoffer/new/partnerinventory/"
 }
 
-func (p PartnerInventoryRequest) Values() (url.Values, error) {
+func (p PartnerInventoryRequest) OldValues() (url.Values, error) {
 	values := make(url.Values)
 	values.Add("sessionid", p.SessionId)
 	values.Add("partner", p.PartnerSteamId.String())

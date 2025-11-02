@@ -81,7 +81,8 @@ type Request interface {
 	RequiresApiKey() bool
 	Method() string
 	Url() string
-	Values() (url.Values, error)
+	OldValues() (url.Values, error)
+	Values() (interface{}, error)
 	Headers() (http.Header, error)
 	EnsureResponseSuccess(httpResponse *http.Response) error
 }
@@ -121,7 +122,7 @@ func NewTransport(options HttpTransportOptions) *HttpTransport {
 		},
 		{
 			Name:  "mobileClientVersion",
-			Value: "777777 3.0.0",
+			Value: "777777 3.10.3",
 		},
 	})
 
@@ -160,7 +161,7 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 
 	httpMethod := request.Method()
 
-	requestValues, valuesErr := request.Values()
+	requestValues, valuesErr := request.OldValues()
 	if valuesErr != nil {
 		return valuesErr
 	}
@@ -192,7 +193,7 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 	}
 
 	httpRequest.Header.Add("Accept", JsonContentType)
-	httpRequest.Header.Add("User-Agent", "okhttp/3.12.12")
+	httpRequest.Header.Add("User-Agent", "okhttp/4.9.2")
 	if httpMethod == http.MethodPost {
 		httpRequest.Header.Add("Content-Type", FormContentType)
 	}

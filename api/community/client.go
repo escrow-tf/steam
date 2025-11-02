@@ -52,7 +52,15 @@ func (p PlayerInventoryRequest) Method() string {
 	return http.MethodGet
 }
 
-func (p PlayerInventoryRequest) Values() (url.Values, error) {
+func (p PlayerInventoryRequest) OldValues() (url.Values, error) {
+	values := make(url.Values)
+	values.Add("l", p.language)
+	values.Add("count", strconv.FormatUint(uint64(p.count), 10))
+	values.Add("start", strconv.FormatUint(uint64(p.start), 10))
+	return values, nil
+}
+
+func (p PlayerInventoryRequest) Values() (interface{}, error) {
 	values := make(url.Values)
 	values.Add("l", p.language)
 	values.Add("count", strconv.FormatUint(uint64(p.count), 10))

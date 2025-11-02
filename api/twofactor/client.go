@@ -39,6 +39,11 @@ func (c *Client) AlignTime(ctx context.Context) error {
 
 type QueryTimeRequest struct{}
 
+func (q QueryTimeRequest) Values() (interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (q QueryTimeRequest) CacheTTL() time.Duration {
 	return 0
 }
@@ -67,7 +72,7 @@ func (q QueryTimeRequest) Url() string {
 	return fmt.Sprintf("%s/ITwoFactorService/QueryTime/v0001", api.BaseURL)
 }
 
-func (q QueryTimeRequest) Values() (url.Values, error) {
+func (q QueryTimeRequest) OldValues() (url.Values, error) {
 	return url.Values{
 		"steamid": []string{"0"},
 	}, nil

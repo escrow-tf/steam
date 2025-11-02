@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/escrow-tf/steam/api/tf2econ"
 	"github.com/escrow-tf/steam/api/tradeoffer"
 	"github.com/escrow-tf/steam/api/twofactor"
+	steamproto "github.com/escrow-tf/steam/proto/steam"
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/totp"
 	"github.com/golang-jwt/jwt/v5"
@@ -89,10 +89,10 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 		return nil, errors.New("AccountState is required")
 	}
 
-	deviceHostName, err := os.Hostname()
-	if err != nil {
-		return nil, eris.Errorf("os.Hostname() failed: %v", err)
-	}
+	//deviceHostName, err := os.Hostname()
+	//if err != nil {
+	//	return nil, eris.Errorf("os.Hostname() failed: %v", err)
+	//}
 
 	webTransport := api.NewTransport(options.HttpTransportOptions)
 	authClient := &auth.Client{
@@ -117,8 +117,9 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 	}
 
 	deviceDetails := auth.DeviceDetails{
-		FriendlyName:     fmt.Sprintf("%s (steamguard-cli)", deviceHostName),
-		PlatformType:     auth.MobileAppPlatformType,
+		//FriendlyName:     fmt.Sprintf("%s (steamguard-cli)", deviceHostName),
+		FriendlyName:     fmt.Sprintf("Galaxy S25"),
+		PlatformType:     steamproto.EAuthTokenPlatformType_k_EAuthTokenPlatformType_MobileApp,
 		OsType:           auth.AndroidUnknownOsType,
 		GamingDeviceType: auth.DefaultGamingDeviceType,
 	}

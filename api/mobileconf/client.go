@@ -70,6 +70,11 @@ type Request struct {
 	totpTime time.Time
 }
 
+func (r Request) Values() (interface{}, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (r Request) CacheTTL() time.Duration {
 	return 0
 }
@@ -102,7 +107,7 @@ func (r Request) Url() string {
 	return fmt.Sprintf("https://steamcommunity.com/mobileconf/%s", r.Path)
 }
 
-func (r Request) Values() (url.Values, error) {
+func (r Request) OldValues() (url.Values, error) {
 	parameters := make(url.Values)
 
 	parameters.Add("k", base64.StdEncoding.EncodeToString(r.key))
