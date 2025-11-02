@@ -307,7 +307,7 @@ func (r StartSessionRequest) Values() (interface{}, error) {
 		return nil, eris.Errorf("marshal failed %v", err)
 	}
 
-	return base64.StdEncoding.EncodeToString(marshalled), nil
+	return fmt.Sprintf("input_protobuf_encoded=%s", url.QueryEscape(base64.StdEncoding.EncodeToString(marshalled))), nil
 }
 
 func (r StartSessionRequest) Url() string {
