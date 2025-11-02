@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -66,7 +67,7 @@ type WebSession struct {
 	tradeOfferClient *tradeoffer.Client
 	twoFactorClient  *twofactor.Client
 
-	clientId        string
+	clientId        uint64
 	requestId       string
 	steamId         steamid.SteamID
 	jwt             *jwt.Token
@@ -135,8 +136,8 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 	}
 
 	hasDeviceCodeType := false
-	for _, allowedConfirmation := range sessionResponse.Response.AllowedConfirmations {
-		if allowedConfirmation.ConfirmationType == auth.DeviceCodeGuardType {
+	for _, allowedConfirmation := range sessionResponse.AllowedConfirmations {
+		if allowedConfirmation.ConfirmationType != nil && *allowedConfirmation.ConfirmationType == steamproto.EAuthSessionGuardType_k_EAuthSessionGuardType_DeviceCode {
 			hasDeviceCodeType = true
 		}
 	}
@@ -145,7 +146,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 		return nil, eris.Errorf("DeviceCode auth not in list of allowed confirmations")
 	}
 
-	weakToken, _, err := jwt.NewParser().ParseUnverified(sessionResponse.Response.WeakToken, jwt.MapClaims{})
+	weakToken, _, err := jwt.NewParser().ParseUnverified(*sessionResponse.WeakToken, jwt.MapClaims{})
 	if err != nil {
 		return nil, eris.Errorf("weak token was invalid JWT, credentials probably incorrect: %v", err)
 	}
@@ -165,7 +166,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 		return nil, eris.Errorf("error generating totp code failed: %v", err)
 	}
 
-	err = authClient.SubmitSteamGuardCode(ctx, sessionResponse.Response.ClientId, steamID, code)
+	err = authClient.SubmitSteamGuardCode(ctx, *sessionResponse.ClientId, steamID, code)
 	if err != nil {
 		return nil, eris.Errorf("error submitting totp code: %v", err)
 	}
@@ -193,10 +194,10 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 		communityClient: &community.Client{
 			Transport: webTransport,
 		},
-		clientId:        sessionResponse.Response.ClientId,
-		requestId:       sessionResponse.Response.RequestId,
+		clientId:        *sessionResponse.ClientId,
+		requestId:       string(sessionResponse.RequestId),
 		steamId:         steamID,
-		refreshInterval: sessionResponse.Response.Interval,
+		refreshInterval: int(*sessionResponse.Interval),
 	}
 
 	err = webSession.pollSession(ctx)
@@ -220,7 +221,7 @@ func (w *WebSession) pollSession(ctx context.Context) error {
 	}
 
 	if len(pollResponse.Response.NewClientID) > 0 {
-		w.clientId = pollResponse.Response.NewClientID
+		w.clientId, _ = strconv.ParseUint(pollResponse.Response.NewClientID, 10, 64)
 	}
 
 	// only attempt to refresh if a refresh token was given to us

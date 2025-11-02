@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 
+	steamproto "github.com/escrow-tf/steam/proto/steam"
 	"github.com/escrow-tf/steam/steamid"
 )
 
@@ -14,7 +15,7 @@ type Api interface {
 		accountName string,
 		password EncryptedPassword,
 		deviceDetails DeviceDetails,
-	) (StartSessionResponse, error)
+	) (*steamproto.CAuthentication_BeginAuthSessionViaCredentials_Response, error)
 	SubmitSteamGuardCode(ctx context.Context, clientID string, steamID steamid.SteamID, code string) error
 	PollSessionStatus(ctx context.Context, clientID string, requestID string) (PollSessionStatusResponse, error)
 	GenerateAccessTokenForApp(ctx context.Context, refreshToken string, renew bool) (GenerateAccessTokenResponse, error)

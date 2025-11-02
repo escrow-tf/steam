@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/rotisserie/eris"
+	"google.golang.org/protobuf/proto"
 )
 
 type TokenRenewalType int
@@ -267,9 +268,20 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 			return eris.Errorf("couldn't read request: %v", err)
 		}
 
-		err = json.Unmarshal(responseBody, response)
-		if err != nil {
-			return eris.Errorf("couldnt unmarshal response: %v", err)
+		if httpResponse.Header.Get("Content-Type") == JsonContentType {
+			err = json.Unmarshal(responseBody, response)
+			if err != nil {
+				return eris.Errorf("couldnt unmarshal response: %v", err)
+			}
+		} else {
+			responseMessage, isMessage := response.(proto.Message)
+			if !isMessage {
+				return eris.New("http response is not json, but response parameter is not proto.Message")
+			}
+			err = proto.Unmarshal(responseBody, responseMessage)
+			if err != nil {
+				return eris.Errorf("couldnt unmarshal response: %v", err)
+			}
 		}
 	}
 

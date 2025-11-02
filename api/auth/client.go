@@ -335,7 +335,7 @@ func (c *Client) StartSessionWithCredentials(
 	accountName string,
 	password EncryptedPassword,
 	deviceDetails DeviceDetails,
-) (StartSessionResponse, error) {
+) (*steamproto.CAuthentication_BeginAuthSessionViaCredentials_Response, error) {
 	request := StartSessionRequest{
 		AccountName:         accountName,
 		EncryptedPassword:   password.Base64,
@@ -344,17 +344,17 @@ func (c *Client) StartSessionWithCredentials(
 		Language:            0,
 		QosLevel:            2,
 	}
-	var response StartSessionResponse
+	var response steamproto.CAuthentication_BeginAuthSessionViaCredentials_Response
 	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
-		return StartSessionResponse{}, sendErr
+		return nil, sendErr
 	}
 
-	return response, nil
+	return &response, nil
 }
 
 type UpdateSessionWithSteamGuardCodeRequest struct {
-	ClientID string
+	ClientID uint64
 	SteamID  string
 	Code     string
 	CodeType GuardType
@@ -390,7 +390,7 @@ func (r UpdateSessionWithSteamGuardCodeRequest) Method() string {
 
 func (r UpdateSessionWithSteamGuardCodeRequest) OldValues() (url.Values, error) {
 	values := make(url.Values)
-	values.Add("client_id", r.ClientID)
+	values.Add("client_id", strconv.FormatUint(r.ClientID, 10))
 	values.Add("steamid", r.SteamID)
 	values.Add("code", r.Code)
 	values.Add("code_type", strconv.Itoa(int(r.CodeType)))
@@ -403,7 +403,7 @@ func (r UpdateSessionWithSteamGuardCodeRequest) Url() string {
 
 func (c *Client) SubmitSteamGuardCode(
 	ctx context.Context,
-	clientID string,
+	clientID uint64,
 	steamID steamid.SteamID,
 	code string,
 ) error {
@@ -426,7 +426,7 @@ func (c *Client) SubmitSteamGuardCode(
 }
 
 type PollSessionStatusRequest struct {
-	ClientID  string
+	ClientID  uint64
 	RequestID string
 }
 
@@ -460,7 +460,7 @@ func (r PollSessionStatusRequest) Method() string {
 
 func (r PollSessionStatusRequest) OldValues() (url.Values, error) {
 	values := make(url.Values)
-	values.Add("client_id", r.ClientID)
+	values.Add("client_id", strconv.FormatUint(r.ClientID, 10))
 	values.Add("request_id", r.RequestID)
 	return values, nil
 }
@@ -482,7 +482,7 @@ type PollSessionStatusResponse struct {
 
 func (c *Client) PollSessionStatus(
 	ctx context.Context,
-	clientID string,
+	clientID uint64,
 	requestID string,
 ) (PollSessionStatusResponse, error) {
 	request := PollSessionStatusRequest{
