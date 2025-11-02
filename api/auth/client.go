@@ -236,6 +236,7 @@ func (r StartSessionRequest) Values() (url.Values, error) {
 	values.Add("account_name", r.AccountName)
 	values.Add("encrypted_password", r.EncryptedPassword)
 	values.Add("encryption_timestamp", r.EncryptionTimestamp)
+	values.Add("platform_type", strconv.Itoa(int(r.DeviceDetails.PlatformType)))
 	values.Add("persistence", strconv.Itoa(int(r.Persistence)))
 	values.Add("language", strconv.Itoa(r.Language))
 	values.Add("qos_level", strconv.Itoa(r.QosLevel))
