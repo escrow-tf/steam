@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/cookiejar"
+	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
@@ -95,11 +96,13 @@ type HttpTransport struct {
 	webApiKey   string
 	client      *http.Client
 	retryClient *retryablehttp.Client
+	logResponse bool
 }
 
 type HttpTransportOptions struct {
 	WebApiKey     string
 	ResponseCache CacheAdaptor
+	LogResponse   bool
 }
 
 func NewTransport(options HttpTransportOptions) *HttpTransport {
@@ -132,6 +135,7 @@ func NewTransport(options HttpTransportOptions) *HttpTransport {
 		webApiKey:   options.WebApiKey,
 		client:      httpClient,
 		retryClient: retryClient,
+		logResponse: options.LogResponse,
 	}
 }
 
@@ -206,6 +210,13 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 	httpResponse, httpResponseErr := httpClient.Do(httpRequest)
 	if httpResponseErr != nil {
 		return eris.Errorf("request to Steam failed: %v", httpResponseErr)
+	}
+
+	if c.logResponse {
+		dump, dumpErr := httputil.DumpResponse(httpResponse, true)
+		if dumpErr == nil {
+			log.Println(string(dump))
+		}
 	}
 
 	defer func(Body io.ReadCloser) {
