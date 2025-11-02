@@ -231,13 +231,26 @@ func (r StartSessionRequest) Values() (url.Values, error) {
 		return nil, eris.Errorf("json marshal failed %v", err)
 	}
 
+	var websiteId string
+	switch r.DeviceDetails.PlatformType {
+	case WebBrowserPlatformType:
+		websiteId = "Community"
+	case MobileAppPlatformType:
+		websiteId = "Mobile"
+	case SteamClientPlatformType:
+		websiteId = "Unknown"
+	default:
+		return nil, eris.Errorf("unsupported platform type %v", r.DeviceDetails.PlatformType)
+	}
 	values := make(url.Values)
 	values.Add("device_friendly_name", r.DeviceDetails.FriendlyName)
 	values.Add("account_name", r.AccountName)
 	values.Add("encrypted_password", r.EncryptedPassword)
 	values.Add("encryption_timestamp", r.EncryptionTimestamp)
 	values.Add("platform_type", strconv.Itoa(int(r.DeviceDetails.PlatformType)))
+	values.Add("remember_login", strconv.FormatBool(r.Persistence == PersistentSessionPersistence))
 	values.Add("persistence", strconv.Itoa(int(r.Persistence)))
+	values.Add("website_id", websiteId)
 	values.Add("language", strconv.Itoa(r.Language))
 	values.Add("qos_level", strconv.Itoa(r.QosLevel))
 	values.Add("device_details", string(deviceDetailsBytes))
