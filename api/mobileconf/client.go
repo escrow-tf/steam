@@ -71,8 +71,7 @@ type Request struct {
 }
 
 func (r Request) Values() (interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return r.OldValues()
 }
 
 func (r Request) CacheTTL() time.Duration {

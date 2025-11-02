@@ -161,7 +161,7 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 
 	httpMethod := request.Method()
 
-	requestValues, valuesErr := request.OldValues()
+	requestValues, valuesErr := request.Values()
 	if valuesErr != nil {
 		return valuesErr
 	}
@@ -175,15 +175,26 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 		if requestValues == nil {
 			requestValues = make(url.Values)
 		}
-		requestValues.Add("key", c.webApiKey)
+
+		if values, isValues := requestValues.(url.Values); isValues {
+			values.Add("key", c.webApiKey)
+		}
+	}
+
+	valuesString := ""
+	switch v := requestValues.(type) {
+	case url.Values:
+		valuesString = v.Encode()
+	case []byte:
+		valuesString = string(v)
 	}
 
 	var httpBody io.Reader
 	if requestValues != nil {
 		if httpMethod == http.MethodGet {
-			requestUrl += requestValues.Encode()
+			requestUrl += valuesString
 		} else {
-			httpBody = strings.NewReader(requestValues.Encode())
+			httpBody = strings.NewReader(valuesString)
 		}
 	}
 

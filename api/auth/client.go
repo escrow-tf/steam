@@ -361,8 +361,7 @@ type UpdateSessionWithSteamGuardCodeRequest struct {
 }
 
 func (r UpdateSessionWithSteamGuardCodeRequest) Values() (interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return r.OldValues()
 }
 
 func (r UpdateSessionWithSteamGuardCodeRequest) CacheTTL() time.Duration {
@@ -432,8 +431,7 @@ type PollSessionStatusRequest struct {
 }
 
 func (r PollSessionStatusRequest) Values() (interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return r.OldValues()
 }
 
 func (r PollSessionStatusRequest) CacheTTL() time.Duration {
@@ -506,8 +504,7 @@ type GenerateAccessTokenRequest struct {
 }
 
 func (r GenerateAccessTokenRequest) Values() (interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return r.OldValues()
 }
 
 func (r GenerateAccessTokenRequest) CacheTTL() time.Duration {

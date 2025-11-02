@@ -142,8 +142,7 @@ type CreateRequest struct {
 }
 
 func (c CreateRequest) Values() (interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return r.OldValues()
 }
 
 func (c CreateRequest) CacheTTL() time.Duration {
@@ -328,8 +327,7 @@ type PartnerInventoryRequest struct {
 }
 
 func (p PartnerInventoryRequest) Values() (interface{}, error) {
-	//TODO implement me
-	panic("implement me")
+	return r.OldValues()
 }
 
 func (p PartnerInventoryRequest) CacheTTL() time.Duration {
