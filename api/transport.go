@@ -93,16 +93,18 @@ type Transport interface {
 }
 
 type HttpTransport struct {
-	webApiKey   string
-	client      *http.Client
-	retryClient *retryablehttp.Client
-	logResponse bool
+	webApiKey     string
+	client        *http.Client
+	retryClient   *retryablehttp.Client
+	dumpRequests  bool
+	dumpResponses bool
 }
 
 type HttpTransportOptions struct {
 	WebApiKey     string
 	ResponseCache CacheAdaptor
-	LogResponse   bool
+	DumpRequests  bool
+	DumpResponses bool
 }
 
 func NewTransport(options HttpTransportOptions) *HttpTransport {
@@ -137,10 +139,10 @@ func NewTransport(options HttpTransportOptions) *HttpTransport {
 	retryClient.HTTPClient = httpClient
 
 	return &HttpTransport{
-		webApiKey:   options.WebApiKey,
-		client:      httpClient,
-		retryClient: retryClient,
-		logResponse: options.LogResponse,
+		webApiKey:     options.WebApiKey,
+		client:        httpClient,
+		retryClient:   retryClient,
+		dumpResponses: options.DumpResponses,
 	}
 }
 
@@ -212,12 +214,19 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 		httpClient = c.retryClient.StandardClient()
 	}
 
+	if c.dumpRequests {
+		dump, dumpErr := httputil.DumpRequest(httpRequest, true)
+		if dumpErr == nil {
+			log.Println(string(dump))
+		}
+	}
+
 	httpResponse, httpResponseErr := httpClient.Do(httpRequest)
 	if httpResponseErr != nil {
 		return eris.Errorf("request to Steam failed: %v", httpResponseErr)
 	}
 
-	if c.logResponse {
+	if c.dumpResponses {
 		dump, dumpErr := httputil.DumpResponse(httpResponse, true)
 		if dumpErr == nil {
 			log.Println(string(dump))
