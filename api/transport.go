@@ -185,7 +185,7 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 	switch v := requestValues.(type) {
 	case url.Values:
 		valuesString = v.Encode()
-	case []byte:
+	case string:
 		valuesString = string(v)
 	}
 
