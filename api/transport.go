@@ -142,6 +142,7 @@ func NewTransport(options HttpTransportOptions) *HttpTransport {
 		webApiKey:     options.WebApiKey,
 		client:        httpClient,
 		retryClient:   retryClient,
+		dumpRequests:  options.DumpRequests,
 		dumpResponses: options.DumpResponses,
 	}
 }
