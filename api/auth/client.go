@@ -247,13 +247,14 @@ func (r StartSessionRequest) Values() (url.Values, error) {
 	values.Add("account_name", r.AccountName)
 	values.Add("encrypted_password", r.EncryptedPassword)
 	values.Add("encryption_timestamp", r.EncryptionTimestamp)
-	values.Add("platform_type", strconv.Itoa(int(r.DeviceDetails.PlatformType)))
 	values.Add("remember_login", strconv.FormatBool(r.Persistence == PersistentSessionPersistence))
+	values.Add("platform_type", strconv.Itoa(int(r.DeviceDetails.PlatformType)))
 	values.Add("persistence", strconv.Itoa(int(r.Persistence)))
 	values.Add("website_id", websiteId)
+	values.Add("device_details", string(deviceDetailsBytes))
+	values.Add("guard_data", "")
 	values.Add("language", strconv.Itoa(r.Language))
 	values.Add("qos_level", strconv.Itoa(r.QosLevel))
-	values.Add("device_details", string(deviceDetailsBytes))
 	return values, nil
 }
 
