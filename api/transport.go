@@ -123,8 +123,13 @@ func NewTransport(options HttpTransportOptions) *HttpTransport {
 		},
 	})
 
+	var httpTransport http.RoundTripper = cleanhttp.DefaultPooledTransport()
+	if options.ResponseCache != nil {
+		httpTransport = newCachingTransport(httpTransport, options.ResponseCache)
+	}
+
 	httpClient := &http.Client{
-		Transport: newCachingTransport(cleanhttp.DefaultPooledTransport(), options.ResponseCache),
+		Transport: httpTransport,
 		Jar:       jar,
 	}
 
