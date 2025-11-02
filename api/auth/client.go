@@ -2,6 +2,7 @@
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/escrow-tf/steam/api"
-	"github.com/escrow-tf/steam/gorsa"
 	steamproto "github.com/escrow-tf/steam/proto/steam"
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/steamlang"
@@ -136,7 +136,9 @@ func (c *Client) EncryptAccountPassword(
 		return EncryptedPassword{}, eris.Errorf("GetPublicRsaKey failed: %v", err)
 	}
 
-	encryptedPassword, err := gorsa.EncryptPKCS1([]byte(password), &publicKey.PublicKey)
+	encryptedPassword, err := rsa.EncryptPKCS1v15(rand.Reader, &publicKey.PublicKey, []byte(password))
+
+	//encryptedPassword, err := gorsa.EncryptPKCS1([]byte(password), &publicKey.PublicKey)
 	if err != nil {
 		return EncryptedPassword{}, eris.Errorf("gorsa.EncryptPKCS1() failed: %v", err)
 	}
