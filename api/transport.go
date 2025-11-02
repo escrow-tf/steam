@@ -268,7 +268,7 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 			return eris.Errorf("couldn't read request: %v", err)
 		}
 
-		if httpResponse.Header.Get("Content-Type") == JsonContentType {
+		if strings.Contains(httpResponse.Header.Get("Content-Type"), JsonContentType) {
 			err = json.Unmarshal(responseBody, response)
 			if err != nil {
 				return eris.Errorf("couldnt unmarshal response: %v", err)
