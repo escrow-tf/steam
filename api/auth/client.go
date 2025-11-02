@@ -232,6 +232,7 @@ func (r StartSessionRequest) Values() (url.Values, error) {
 	}
 
 	values := make(url.Values)
+	values.Add("device_friendly_name", r.DeviceDetails.FriendlyName)
 	values.Add("account_name", r.AccountName)
 	values.Add("encrypted_password", r.EncryptedPassword)
 	values.Add("encryption_timestamp", r.EncryptionTimestamp)
