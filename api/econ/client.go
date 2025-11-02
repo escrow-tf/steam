@@ -152,7 +152,7 @@ type GetTradeOffersRequest struct {
 }
 
 func (g GetTradeOffersRequest) Values() (interface{}, error) {
-	return r.OldValues()
+	return g.OldValues()
 }
 
 func (g GetTradeOffersRequest) CacheTTL() time.Duration {

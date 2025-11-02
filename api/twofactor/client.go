@@ -40,7 +40,7 @@ func (c *Client) AlignTime(ctx context.Context) error {
 type QueryTimeRequest struct{}
 
 func (q QueryTimeRequest) Values() (interface{}, error) {
-	return r.OldValues()
+	return q.OldValues()
 }
 
 func (q QueryTimeRequest) CacheTTL() time.Duration {
