@@ -13,6 +13,7 @@ import (
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/steamlang"
+	"github.com/rotisserie/eris"
 )
 
 type SessionIdFunc func(transport api.Transport) (string, error)
@@ -70,7 +71,7 @@ func (t ActionRequest) Headers() (http.Header, error) {
 func (c *Client) act(ctx context.Context, id uint64, verb string) (*ActionResponse, error) {
 	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
 	if sessionIdErr != nil {
-		return nil, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
+		return nil, eris.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
 	}
 
 	request := ActionRequest{
@@ -200,7 +201,7 @@ func (c *Client) Create(
 ) (CreateResponse, error) {
 	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
 	if sessionIdErr != nil {
-		return CreateResponse{}, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
+		return CreateResponse{}, eris.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
 	}
 
 	offer := Offer{
@@ -220,7 +221,7 @@ func (c *Client) Create(
 
 	offerJson, offerJsonErr := json.Marshal(offer)
 	if offerJsonErr != nil {
-		return CreateResponse{}, fmt.Errorf("error marshalling Offer: %v", offerJsonErr)
+		return CreateResponse{}, eris.Errorf("error marshalling Offer: %v", offerJsonErr)
 	}
 
 	createParams := CreateParams{
@@ -229,7 +230,7 @@ func (c *Client) Create(
 
 	createParamsJson, createParamsJsonErr := json.Marshal(createParams)
 	if createParamsJsonErr != nil {
-		return CreateResponse{}, fmt.Errorf("error marshalling CreateParams: %v", createParamsJsonErr)
+		return CreateResponse{}, eris.Errorf("error marshalling CreateParams: %v", createParamsJsonErr)
 	}
 
 	request := CreateRequest{
@@ -245,7 +246,7 @@ func (c *Client) Create(
 	var response CreateResponse
 	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
-		return CreateResponse{}, fmt.Errorf("error creating new Offer: %v", sendErr)
+		return CreateResponse{}, eris.Errorf("error creating new Offer: %v", sendErr)
 	}
 
 	// There are a couple of error formats we're likely to receive back:
@@ -265,7 +266,7 @@ func (c *Client) Create(
 		eResultString := response.Error[leftParenIdx:rightParenIdx]
 		eResult, err := strconv.ParseInt(eResultString, 10, 32)
 		if err != nil {
-			return CreateResponse{}, fmt.Errorf("error sending offer: %v", response.Error)
+			return CreateResponse{}, eris.Errorf("error sending offer: %v", response.Error)
 		}
 
 		switch steamlang.EResult(eResult) {
@@ -296,11 +297,11 @@ func (c *Client) Create(
 	}
 
 	if response.Error != "" {
-		return CreateResponse{}, fmt.Errorf("error sending offer: %v", response.Error)
+		return CreateResponse{}, eris.Errorf("error sending offer: %v", response.Error)
 	}
 
 	if response.TradeOfferId == 0 {
-		return CreateResponse{}, fmt.Errorf("error creating offer: steam returned tradeofferid 0")
+		return CreateResponse{}, eris.Errorf("error creating offer: steam returned tradeofferid 0")
 	}
 
 	return response, nil
@@ -421,7 +422,7 @@ func (c *Client) GetPartnerInventory(
 ) (*PartnerInventoryResponse, error) {
 	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
 	if sessionIdErr != nil {
-		return nil, fmt.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
+		return nil, eris.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
 	}
 
 	request := &PartnerInventoryRequest{

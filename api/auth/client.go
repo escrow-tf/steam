@@ -16,6 +16,7 @@ import (
 	"github.com/escrow-tf/steam/gorsa"
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/steamlang"
+	"github.com/rotisserie/eris"
 )
 
 type Client struct {
@@ -76,13 +77,13 @@ type GetRsaKeyResponse struct {
 func (r GetRsaKeyResponse) PublicKey() (PublicRsaKey, error) {
 	exponent, err := strconv.ParseInt(r.Response.PublicKeyExp, 16, 64)
 	if err != nil {
-		return PublicRsaKey{}, fmt.Errorf("error parsing public key exponent %v", err)
+		return PublicRsaKey{}, eris.Errorf("error parsing public key exponent %v", err)
 	}
 
 	modulus := big.NewInt(0)
 	modulus, ok := modulus.SetString(r.Response.PublicKeyMod, 16)
 	if !ok {
-		return PublicRsaKey{}, fmt.Errorf("error parsing public key modulus")
+		return PublicRsaKey{}, eris.Errorf("error parsing public key modulus")
 	}
 
 	return PublicRsaKey{
@@ -124,12 +125,12 @@ func (c *Client) EncryptAccountPassword(
 ) (EncryptedPassword, error) {
 	publicKey, err := c.GetPublicRsaKey(ctx, accountName)
 	if err != nil {
-		return EncryptedPassword{}, fmt.Errorf("GetPublicRsaKey failed: %v", err)
+		return EncryptedPassword{}, eris.Errorf("GetPublicRsaKey failed: %v", err)
 	}
 
 	encryptedPassword, err := gorsa.EncryptPKCS1([]byte(password), &publicKey.PublicKey)
 	if err != nil {
-		return EncryptedPassword{}, fmt.Errorf("gorsa.EncryptPKCS1() failed: %v", err)
+		return EncryptedPassword{}, eris.Errorf("gorsa.EncryptPKCS1() failed: %v", err)
 	}
 
 	return EncryptedPassword{
@@ -227,7 +228,7 @@ func (r StartSessionRequest) Method() string {
 func (r StartSessionRequest) Values() (url.Values, error) {
 	deviceDetailsBytes, err := json.Marshal(r.DeviceDetails)
 	if err != nil {
-		return nil, fmt.Errorf("json marshal failed %v", err)
+		return nil, eris.Errorf("json marshal failed %v", err)
 	}
 
 	values := make(url.Values)
@@ -335,7 +336,7 @@ func (c *Client) SubmitSteamGuardCode(
 	code string,
 ) error {
 	if !steamID.IsValidIndividual() {
-		return fmt.Errorf("steamID is not valid individual: %v", steamID.String())
+		return eris.Errorf("steamID is not valid individual: %v", steamID.String())
 	}
 
 	request := UpdateSessionWithSteamGuardCodeRequest{

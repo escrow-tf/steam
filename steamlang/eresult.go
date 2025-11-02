@@ -2,9 +2,10 @@
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/rotisserie/eris"
 )
 
 type EResult int
@@ -142,12 +143,12 @@ const (
 
 func EResultError(e EResult) error {
 	// TODO: better way to represent eresult errors
-	return fmt.Errorf("EResult: %d", e)
+	return eris.Errorf("EResult: %d", e)
 }
 
 func EnsureSuccessResponse(response *http.Response) error {
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return fmt.Errorf("request failed with status %v", response.StatusCode)
+		return eris.Errorf("request failed with status %v", response.StatusCode)
 	}
 
 	return nil
@@ -174,10 +175,10 @@ func EnsureEResultResponse(httpResponse *http.Response) error {
 				errorMessages[i] = errors.New(header)
 			}
 
-			return fmt.Errorf("steam responded with non-OK Result: %v, %v", eResult, errors.Join(errorMessages...))
+			return eris.Errorf("steam responded with non-OK Result: %v, %v", eResult, errors.Join(errorMessages...))
 		}
 
-		return fmt.Errorf("steam responded with non-OK Result: %v", eResult)
+		return eris.Errorf("steam responded with non-OK Result: %v", eResult)
 	}
 
 	return nil

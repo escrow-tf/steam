@@ -7,6 +7,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"time"
+
+	"github.com/rotisserie/eris"
 )
 
 type State struct {
@@ -17,12 +19,12 @@ type State struct {
 func NewState(sharedSecret string, identitySecret string) (*State, error) {
 	sharedKey, err := base64.StdEncoding.DecodeString(sharedSecret)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding shared secret: %s", err)
+		return nil, eris.Errorf("error decoding shared secret: %s", err)
 	}
 
 	identityKey, err := base64.StdEncoding.DecodeString(identitySecret)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding identity secret: %s", err)
+		return nil, eris.Errorf("error decoding identity secret: %s", err)
 	}
 
 	return &State{

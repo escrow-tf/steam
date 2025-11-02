@@ -3,7 +3,6 @@
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -15,6 +14,7 @@ import (
 	"github.com/escrow-tf/steam/steamlang"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/rotisserie/eris"
 )
 
 type TokenRenewalType int
@@ -143,7 +143,7 @@ func (c HttpTransport) CookieJar() http.CookieJar {
 func (c HttpTransport) Send(ctx context.Context, request Request, response any) error {
 	//rv := reflect.ValueOf(response)
 	//if rv.!(rv.IsZero() || rv.IsNil()) && rv.Kind() != reflect.Pointer {
-	//	return fmt.Errorf("response type must be a pointer when not nil")
+	//	return eris.Errorf("response type must be a pointer when not nil")
 	//}
 
 	httpMethod := request.Method()
@@ -205,7 +205,7 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 
 	httpResponse, httpResponseErr := httpClient.Do(httpRequest)
 	if httpResponseErr != nil {
-		return fmt.Errorf("request to Steam failed: %v", httpResponseErr)
+		return eris.Errorf("request to Steam failed: %v", httpResponseErr)
 	}
 
 	defer func(Body io.ReadCloser) {
@@ -226,12 +226,12 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 	if response != nil {
 		responseBody, err := io.ReadAll(httpResponse.Body)
 		if err != nil {
-			return fmt.Errorf("couldn't read request: %v", err)
+			return eris.Errorf("couldn't read request: %v", err)
 		}
 
 		err = json.Unmarshal(responseBody, response)
 		if err != nil {
-			return fmt.Errorf("couldnt unmarshal response: %v", err)
+			return eris.Errorf("couldnt unmarshal response: %v", err)
 		}
 	}
 

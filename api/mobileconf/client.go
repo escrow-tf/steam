@@ -17,6 +17,7 @@ import (
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/steamlang"
 	"github.com/escrow-tf/steam/totp"
+	"github.com/rotisserie/eris"
 )
 
 type ConfirmationType int
@@ -129,7 +130,7 @@ func (c *Client) SendMobileConfRequest(ctx context.Context, request Request, res
 
 	key, err := c.totpState.GenerateConfirmationKey(totpTime, []byte(request.Tag))
 	if err != nil {
-		return fmt.Errorf("totpState.GenerateConfirmationKey: %v", err)
+		return eris.Errorf("totpState.GenerateConfirmationKey: %v", err)
 	}
 
 	parameters := make(url.Values)
@@ -172,13 +173,13 @@ func (c *Client) SendMobileConfRequest(ctx context.Context, request Request, res
 	}
 
 	if httpRequestErr != nil {
-		return fmt.Errorf("mobileconf request errored: %v", httpRequestErr)
+		return eris.Errorf("mobileconf request errored: %v", httpRequestErr)
 	}
 
 	httpResponse, httpError := c.client.Do(httpRequest)
 
 	if httpError != nil {
-		return fmt.Errorf("mobileconf request errored: %v", httpError)
+		return eris.Errorf("mobileconf request errored: %v", httpError)
 	}
 
 	if err = steamlang.EnsureSuccessResponse(httpResponse); err != nil {
@@ -191,12 +192,12 @@ func (c *Client) SendMobileConfRequest(ctx context.Context, request Request, res
 
 	responseBody, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
-		return fmt.Errorf("couldnt read mobileconf response body: %v", err)
+		return eris.Errorf("couldnt read mobileconf response body: %v", err)
 	}
 
 	err = json.Unmarshal(responseBody, response)
 	if err != nil {
-		return fmt.Errorf("couldnt unmarshal mobileconf response body: %v", err)
+		return eris.Errorf("couldnt unmarshal mobileconf response body: %v", err)
 	}
 
 	return nil
@@ -231,11 +232,11 @@ func (c *Client) GetList(ctx context.Context) (GetListResponse, error) {
 	response := GetListResponse{}
 	err := c.SendMobileConfRequest(ctx, request, &response)
 	if err != nil {
-		return GetListResponse{}, fmt.Errorf("getlist mobile conf request failed: %v", err)
+		return GetListResponse{}, eris.Errorf("getlist mobile conf request failed: %v", err)
 	}
 
 	if !response.Success {
-		return GetListResponse{}, fmt.Errorf("getlist mobile conf request failed: %v", response.Message)
+		return GetListResponse{}, eris.Errorf("getlist mobile conf request failed: %v", response.Message)
 	}
 
 	return response, nil
@@ -258,7 +259,7 @@ func (c *Client) GetDetailsPage(ctx context.Context, id string) (DetailsPageResp
 	response := DetailsPageResponse{}
 	err := c.SendMobileConfRequest(ctx, request, &response)
 	if err != nil {
-		return DetailsPageResponse{}, fmt.Errorf("detailspage mobile conf request failed: %v", err)
+		return DetailsPageResponse{}, eris.Errorf("detailspage mobile conf request failed: %v", err)
 	}
 
 	return response, nil
@@ -286,11 +287,11 @@ func (c *Client) Accept(ctx context.Context, id, nonce string) (AcceptResponse, 
 	response := AcceptResponse{}
 	err := c.SendMobileConfRequest(ctx, request, &response)
 	if err != nil {
-		return AcceptResponse{}, fmt.Errorf("accept mobile conf request failed: %v", err)
+		return AcceptResponse{}, eris.Errorf("accept mobile conf request failed: %v", err)
 	}
 
 	if !response.Success {
-		return AcceptResponse{}, fmt.Errorf("accept mobile conf request failed: %v", response.Message)
+		return AcceptResponse{}, eris.Errorf("accept mobile conf request failed: %v", response.Message)
 	}
 
 	return response, nil
@@ -318,7 +319,7 @@ func (c *Client) Decline(ctx context.Context, id, nonce string) (DeclineResponse
 	response := DeclineResponse{}
 	err := c.SendMobileConfRequest(ctx, request, &response)
 	if err != nil {
-		return DeclineResponse{}, fmt.Errorf("decline mobile conf request failed: %v", err)
+		return DeclineResponse{}, eris.Errorf("decline mobile conf request failed: %v", err)
 	}
 	return response, nil
 }

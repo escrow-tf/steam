@@ -24,6 +24,7 @@ import (
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/totp"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/rotisserie/eris"
 )
 
 type AccountState struct {
@@ -40,7 +41,7 @@ func NewAccountState(
 ) (*AccountState, error) {
 	state, err := totp.NewState(sharedSecret, identitySecret)
 	if err != nil {
-		return nil, fmt.Errorf("NewAccountState failed %v", err)
+		return nil, eris.Errorf("NewAccountState failed %v", err)
 	}
 
 	return &AccountState{
@@ -90,7 +91,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 
 	deviceHostName, err := os.Hostname()
 	if err != nil {
-		return nil, fmt.Errorf("os.Hostname() failed: %v", err)
+		return nil, eris.Errorf("os.Hostname() failed: %v", err)
 	}
 
 	webTransport := api.NewTransport(options.HttpTransportOptions)
@@ -103,7 +104,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 
 	alignErr := twoFactorClient.AlignTime(ctx)
 	if alignErr != nil {
-		return nil, fmt.Errorf("twoFactorClient.AlignTime() failed: %v", alignErr)
+		return nil, eris.Errorf("twoFactorClient.AlignTime() failed: %v", alignErr)
 	}
 
 	encryptedPassword, err := authClient.EncryptAccountPassword(
@@ -112,7 +113,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 		options.AccountState.password,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("EncryptPassword failed %v", err)
+		return nil, eris.Errorf("EncryptPassword failed %v", err)
 	}
 
 	deviceDetails := auth.DeviceDetails{
@@ -129,7 +130,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 		deviceDetails,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("StartSessionWithCredentials failed %v", err)
+		return nil, eris.Errorf("StartSessionWithCredentials failed %v", err)
 	}
 
 	hasDeviceCodeType := false
@@ -140,32 +141,32 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 	}
 
 	if !hasDeviceCodeType {
-		return nil, fmt.Errorf("DeviceCode auth not in list of allowed confirmations")
+		return nil, eris.Errorf("DeviceCode auth not in list of allowed confirmations")
 	}
 
 	weakToken, _, err := jwt.NewParser().ParseUnverified(sessionResponse.Response.WeakToken, jwt.MapClaims{})
 	if err != nil {
-		return nil, fmt.Errorf("weak token was invalid JWT, credentials probably incorrect: %v", err)
+		return nil, eris.Errorf("weak token was invalid JWT, credentials probably incorrect: %v", err)
 	}
 
 	weakTokenSubject, err := weakToken.Claims.GetSubject()
 	if err != nil {
-		return nil, fmt.Errorf("weak token was missing subject claim, credentials probably incorrect: %v", err)
+		return nil, eris.Errorf("weak token was missing subject claim, credentials probably incorrect: %v", err)
 	}
 
 	steamID, err := steamid.ParseSteamID64(weakTokenSubject)
 	if err != nil {
-		return nil, fmt.Errorf("weak token Sub returned invalid steamid64: %v", err)
+		return nil, eris.Errorf("weak token Sub returned invalid steamid64: %v", err)
 	}
 
 	code, err := options.AccountState.totpState.GenerateTotpCode("conf", totp.Time(0))
 	if err != nil {
-		return nil, fmt.Errorf("error generating totp code failed: %v", err)
+		return nil, eris.Errorf("error generating totp code failed: %v", err)
 	}
 
 	err = authClient.SubmitSteamGuardCode(ctx, sessionResponse.Response.ClientId, steamID, code)
 	if err != nil {
-		return nil, fmt.Errorf("error submitting totp code: %v", err)
+		return nil, eris.Errorf("error submitting totp code: %v", err)
 	}
 
 	mobileConfClient, err := mobileconf.NewClient(
@@ -175,7 +176,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 		webTransport,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("mobileconf.NewTransport failed: %v", err)
+		return nil, eris.Errorf("mobileconf.NewTransport failed: %v", err)
 	}
 
 	webSession := &WebSession{
@@ -205,7 +206,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 	// N.B. we need a refresh token in order to get an access token, which we need in order to create the
 	// steamLoginSecure web cookie
 	if len(webSession.refreshToken) == 0 {
-		return nil, fmt.Errorf("no refresh token found in poll response")
+		return nil, eris.Errorf("no refresh token found in poll response")
 	}
 
 	return webSession, nil
@@ -214,7 +215,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 func (w *WebSession) pollSession(ctx context.Context) error {
 	pollResponse, err := w.authClient.PollSessionStatus(ctx, w.clientId, w.requestId)
 	if err != nil {
-		return fmt.Errorf("PollSessionStatus failed: %v", err)
+		return eris.Errorf("PollSessionStatus failed: %v", err)
 	}
 
 	if len(pollResponse.Response.NewClientID) > 0 {
@@ -236,7 +237,7 @@ func (w *WebSession) pollSession(ctx context.Context) error {
 		// establish the access token ourselves.
 		accessTokenResponse, accessTokenErr := w.authClient.GenerateAccessTokenForApp(ctx, w.refreshToken, false)
 		if accessTokenErr != nil {
-			return fmt.Errorf("GenerateAccessTokenForApp failed: %v", accessTokenErr)
+			return eris.Errorf("GenerateAccessTokenForApp failed: %v", accessTokenErr)
 		}
 
 		w.accessToken = accessTokenResponse.Response.AccessToken
@@ -245,11 +246,11 @@ func (w *WebSession) pollSession(ctx context.Context) error {
 
 	refreshTokenJwt, _, err := jwt.NewParser().ParseUnverified(w.refreshToken, jwt.MapClaims{})
 	if err != nil {
-		return fmt.Errorf("refresh token was invalid JWT: %v", err)
+		return eris.Errorf("refresh token was invalid JWT: %v", err)
 	}
 
 	if _, err := refreshTokenJwt.Claims.GetExpirationTime(); err != nil {
-		return fmt.Errorf("refresh token was missing expiration claim: %v", err)
+		return eris.Errorf("refresh token was missing expiration claim: %v", err)
 	}
 
 	w.jwt = refreshTokenJwt
@@ -257,7 +258,7 @@ func (w *WebSession) pollSession(ctx context.Context) error {
 	if oldRefreshToken != w.refreshToken {
 		err = w.finalizeLogin()
 		if err != nil {
-			return fmt.Errorf("finalizeLogin failed: %v", err)
+			return eris.Errorf("finalizeLogin failed: %v", err)
 		}
 	}
 
@@ -268,7 +269,7 @@ func (w *WebSession) finalizeLogin() error {
 	sessionIdBuffer := [12]byte{}
 	_, err := rand.Read(sessionIdBuffer[:])
 	if err != nil {
-		return fmt.Errorf("error creating sessionid bytes: %v", err)
+		return eris.Errorf("error creating sessionid bytes: %v", err)
 	}
 
 	sessionIdBytes := make([]byte, hex.EncodedLen(len(sessionIdBuffer)))
@@ -323,7 +324,7 @@ func GetSessionId(transport api.Transport) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("could not find sessionid cookie")
+	return "", eris.Errorf("could not find sessionid cookie")
 }
 
 func (w *WebSession) SessionId() (string, error) {
