@@ -219,8 +219,8 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 				}
 			}
 
-			contentType = writer.FormDataContentType()
-			httpBody = bytes.NewReader(body.Bytes())
+			//contentType = writer.FormDataContentType()
+			httpBody = strings.NewReader(requestValues.Encode())
 		}
 	}
 
