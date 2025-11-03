@@ -269,6 +269,8 @@ func (r StartSessionRequest) OldValues() (url.Values, error) {
 }
 
 func (r StartSessionRequest) Values() (interface{}, error) {
+	return r.OldValues()
+
 	var websiteId string
 	switch r.DeviceDetails.PlatformType {
 	case steamproto.EAuthTokenPlatformType_k_EAuthTokenPlatformType_WebBrowser:
@@ -309,7 +311,9 @@ func (r StartSessionRequest) Values() (interface{}, error) {
 		return nil, eris.Errorf("marshal failed %v", err)
 	}
 
-	return fmt.Sprintf("input_protobuf_encoded=%s", url.QueryEscape(base64.StdEncoding.EncodeToString(marshalled))), nil
+	return url.Values{
+		"input_protobuf_encoded": url.QueryEscape(base64.StdEncoding.EncodeToString(marshalled)),
+	}, nil
 }
 
 func (r StartSessionRequest) Url() string {

@@ -1,10 +1,12 @@
 ﻿package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httputil"
@@ -162,7 +164,7 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 
 	httpMethod := request.Method()
 
-	requestValues, valuesErr := request.Values()
+	requestValues, valuesErr := request.OldValues()
 	if valuesErr != nil {
 		return valuesErr
 	}
@@ -177,25 +179,48 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 			requestValues = make(url.Values)
 		}
 
-		if values, isValues := requestValues.(url.Values); isValues {
-			values.Add("key", c.webApiKey)
-		}
+		requestValues.Add("key", c.webApiKey)
 	}
 
-	valuesString := ""
-	switch v := requestValues.(type) {
-	case url.Values:
-		valuesString = v.Encode()
-	case string:
-		valuesString = string(v)
-	}
-
+	contentType := FormContentType
 	var httpBody io.Reader
 	if requestValues != nil {
 		if httpMethod == http.MethodGet {
-			requestUrl += valuesString
+			requestUrl += requestValues.Encode()
 		} else {
-			httpBody = strings.NewReader(valuesString)
+			body := &bytes.Buffer{}
+			writer := multipart.NewWriter(body)
+			defer func(writer *multipart.Writer) {
+				_ = writer.Close()
+			}(writer)
+
+			for key, val := range requestValues {
+				fieldWriter, fieldErr := writer.CreateFormField(key)
+				if fieldErr != nil {
+					return fieldErr
+				}
+
+				if _, writeErr := fieldWriter.Write([]byte(val[0])); writeErr != nil {
+					panic(writeErr)
+				}
+
+				for idx, item := range val {
+					if idx == 0 {
+						continue
+					}
+
+					if _, writeErr := fieldWriter.Write([]byte(";")); writeErr != nil {
+						panic(writeErr)
+					}
+
+					if _, writeErr := fieldWriter.Write([]byte(item)); writeErr != nil {
+						panic(writeErr)
+					}
+				}
+			}
+
+			contentType = writer.FormDataContentType()
+			httpBody = bytes.NewReader(body.Bytes())
 		}
 	}
 
@@ -207,7 +232,7 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 	httpRequest.Header.Add("Accept", JsonContentType)
 	httpRequest.Header.Add("User-Agent", "okhttp/4.9.2")
 	if httpMethod == http.MethodPost {
-		httpRequest.Header.Add("Content-Type", FormContentType)
+		httpRequest.Header.Add("Content-Type", contentType)
 	}
 
 	headers, headersErr := request.Headers()
