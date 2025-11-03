@@ -27,12 +27,12 @@ func (c *Client) SteamTime() (time.Time, error) {
 }
 
 func (c *Client) AlignTime(ctx context.Context) error {
-	unixNow := time.Now().Unix()
-	timeResponse, err := c.QueryTime(ctx)
-	if err != nil {
-		return err
-	}
-	c.timeDiff = time.Second * time.Duration(timeResponse.Response.ServerTime-unixNow)
+	//unixNow := time.Now().Unix()
+	//timeResponse, err := c.QueryTime(ctx)
+	//if err != nil {
+	//	return err
+	//}
+	//c.timeDiff = time.Second * time.Duration(timeResponse.Response.ServerTime-unixNow)
 	c.aligned = true
 	return nil
 }
