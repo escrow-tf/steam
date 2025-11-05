@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -68,7 +67,7 @@ type WebSession struct {
 	twoFactorClient  *twofactor.Client
 
 	clientId        uint64
-	requestId       string
+	requestId       []byte
 	steamId         steamid.SteamID
 	jwt             *jwt.Token
 	refreshToken    string
@@ -195,7 +194,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 			Transport: webTransport,
 		},
 		clientId:        *sessionResponse.ClientId,
-		requestId:       string(sessionResponse.RequestId),
+		requestId:       sessionResponse.RequestId,
 		steamId:         steamID,
 		refreshInterval: int(*sessionResponse.Interval),
 	}
@@ -220,20 +219,20 @@ func (w *WebSession) pollSession(ctx context.Context) error {
 		return eris.Errorf("PollSessionStatus failed: %v", err)
 	}
 
-	if len(pollResponse.Response.NewClientID) > 0 {
-		w.clientId, _ = strconv.ParseUint(pollResponse.Response.NewClientID, 10, 64)
+	if pollResponse.NewClientId != nil {
+		w.clientId = *pollResponse.NewClientId
 	}
 
 	// only attempt to refresh if a refresh token was given to us
-	if len(pollResponse.Response.RefreshToken) == 0 {
+	if len(pollResponse.GetRefreshToken()) == 0 {
 		return nil
 	}
 
 	oldRefreshToken := w.refreshToken
 
 	// TODO: do we need to update state.accountName with pollResponse.Response.AccountName?
-	w.accessToken = pollResponse.Response.AccessToken
-	w.refreshToken = pollResponse.Response.RefreshToken
+	w.accessToken = pollResponse.GetAccessToken()
+	w.refreshToken = pollResponse.GetRefreshToken()
 	if len(w.accessToken) == 0 {
 		// under some circumstances, the access token may not be issued by steam when polling login. We may need to
 		// establish the access token ourselves.
@@ -242,8 +241,8 @@ func (w *WebSession) pollSession(ctx context.Context) error {
 			return eris.Errorf("GenerateAccessTokenForApp failed: %v", accessTokenErr)
 		}
 
-		w.accessToken = accessTokenResponse.Response.AccessToken
-		w.refreshToken = accessTokenResponse.Response.RefreshToken
+		w.accessToken = accessTokenResponse.GetAccessToken()
+		w.refreshToken = accessTokenResponse.GetRefreshToken()
 	}
 
 	refreshTokenJwt, _, err := jwt.NewParser().ParseUnverified(w.refreshToken, jwt.MapClaims{})

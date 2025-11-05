@@ -344,10 +344,6 @@ type UpdateSessionWithSteamGuardCodeRequest struct {
 	CodeType GuardType
 }
 
-func (r UpdateSessionWithSteamGuardCodeRequest) Values() (url.Values, error) {
-	return r.OldValues()
-}
-
 func (r UpdateSessionWithSteamGuardCodeRequest) CacheTTL() time.Duration {
 	return 0
 }
@@ -381,6 +377,10 @@ func (r UpdateSessionWithSteamGuardCodeRequest) OldValues() (url.Values, error) 
 	return values, nil
 }
 
+func (r UpdateSessionWithSteamGuardCodeRequest) Values() (url.Values, error) {
+	return r.OldValues()
+}
+
 func (r UpdateSessionWithSteamGuardCodeRequest) Url() string {
 	return fmt.Sprintf("%v/IAuthenticationService/UpdateAuthSessionWithSteamGuardCode/v1/", api.BaseURL)
 }
@@ -411,11 +411,7 @@ func (c *Client) SubmitSteamGuardCode(
 
 type PollSessionStatusRequest struct {
 	ClientID  uint64
-	RequestID string
-}
-
-func (r PollSessionStatusRequest) Values() (url.Values, error) {
-	return r.OldValues()
+	RequestID []byte
 }
 
 func (r PollSessionStatusRequest) CacheTTL() time.Duration {
@@ -445,8 +441,15 @@ func (r PollSessionStatusRequest) Method() string {
 func (r PollSessionStatusRequest) OldValues() (url.Values, error) {
 	values := make(url.Values)
 	values.Add("client_id", strconv.FormatUint(r.ClientID, 10))
-	values.Add("request_id", r.RequestID)
+	values.Add("request_id", string(r.RequestID))
 	return values, nil
+}
+
+func (r PollSessionStatusRequest) Values() (url.Values, error) {
+	return api.MarshalSteamEncodedValues(&steamproto.CAuthentication_PollAuthSessionStatus_Request{
+		ClientId:  &r.ClientID,
+		RequestId: r.RequestID,
+	})
 }
 
 func (r PollSessionStatusRequest) Url() string {
@@ -467,28 +470,24 @@ type PollSessionStatusResponse struct {
 func (c *Client) PollSessionStatus(
 	ctx context.Context,
 	clientID uint64,
-	requestID string,
-) (PollSessionStatusResponse, error) {
+	requestID []byte,
+) (*steamproto.CAuthentication_PollAuthSessionStatus_Response, error) {
 	request := PollSessionStatusRequest{
 		ClientID:  clientID,
 		RequestID: requestID,
 	}
-	var response PollSessionStatusResponse
+	var response steamproto.CAuthentication_PollAuthSessionStatus_Response
 	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
-		return PollSessionStatusResponse{}, sendErr
+		return nil, sendErr
 	}
-	return response, nil
+	return &response, nil
 }
 
 type GenerateAccessTokenRequest struct {
 	RefreshToken string           `json:"refresh_token"`
-	SteamID      string           `json:"steamid"`
+	SteamID      steamid.SteamID  `json:"steamid"`
 	RenewalType  TokenRenewalType `json:"renewal_type"`
-}
-
-func (r GenerateAccessTokenRequest) Values() (url.Values, error) {
-	return r.OldValues()
 }
 
 func (r GenerateAccessTokenRequest) CacheTTL() time.Duration {
@@ -518,9 +517,16 @@ func (r GenerateAccessTokenRequest) Method() string {
 func (r GenerateAccessTokenRequest) OldValues() (url.Values, error) {
 	values := make(url.Values)
 	values.Add("refresh_token", r.RefreshToken)
-	values.Add("steamid", r.SteamID)
+	values.Add("steamid", r.SteamID.String())
 	values.Add("renewal_type", strconv.Itoa(int(r.RenewalType)))
 	return values, nil
+}
+
+func (r GenerateAccessTokenRequest) Values() (url.Values, error) {
+	return api.MarshalSteamEncodedValues(&steamproto.CAuthentication_AccessToken_GenerateForApp_Request{
+		RefreshToken: &r.RefreshToken,
+		Steamid:      proto.Uint64(r.SteamID.ID()),
+	})
 }
 
 func (r GenerateAccessTokenRequest) Url() string {
@@ -538,10 +544,10 @@ func (c *Client) GenerateAccessTokenForApp(
 	ctx context.Context,
 	refreshToken string,
 	renew bool,
-) (GenerateAccessTokenResponse, error) {
+) (*steamproto.CAuthentication_AccessToken_GenerateForApp_Response, error) {
 	jwt, err := DecodeSimpleJwt(refreshToken)
 	if err != nil {
-		return GenerateAccessTokenResponse{}, err
+		return nil, err
 	}
 
 	renewalType := NoneRenewalType
@@ -549,15 +555,20 @@ func (c *Client) GenerateAccessTokenForApp(
 		renewalType = AllowRenewalType
 	}
 
+	steamId, err := steamid.ParseSteamID64(jwt.Sub)
+	if err != nil {
+		return nil, err
+	}
+
 	request := GenerateAccessTokenRequest{
 		RefreshToken: refreshToken,
-		SteamID:      jwt.Sub,
+		SteamID:      steamId,
 		RenewalType:  renewalType,
 	}
-	var response GenerateAccessTokenResponse
-	sendErr := c.Transport.Send(ctx, request, &response)
+	response := new(steamproto.CAuthentication_AccessToken_GenerateForApp_Response)
+	sendErr := c.Transport.Send(ctx, request, response)
 	if sendErr != nil {
-		return GenerateAccessTokenResponse{}, sendErr
+		return nil, sendErr
 	}
 
 	return response, nil
