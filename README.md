@@ -10,5 +10,7 @@ This library implements:
 - [x] Authenticating with Steam (Steam Guard only)
 - [x] Retrieving Econ Inventories
 - [x] Retrieving TF2 Player Inventories
+- [x] Retrieving Trade Partner Inventories for any AppID
 - [x] Trade Offer Operations (GetOffer, GetOffers, Create, Accept, Decline, Cancel)
 - [x] Mobile Confirmations
+- [x] HTTP Response Caching
