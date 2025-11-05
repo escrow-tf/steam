@@ -380,7 +380,7 @@ type PartnerItem struct {
 	ClassId     string `json:"classid"`
 	InstanceId  string `json:"instanceid"`
 	Amount      string `json:"amount"`
-	HideInChina bool   `json:"hide_in_china"`
+	HideInChina int    `json:"hide_in_china"`
 	Position    int    `json:"pos"`
 }
 
