@@ -3,11 +3,20 @@ package api
 import (
 	"bufio"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httputil"
 	"strings"
 	"time"
 )
+
+const CacheNil = CacheAdaptorError("got nil from cache")
+
+type CacheAdaptorError string
+
+func (c CacheAdaptorError) Error() string {
+	return string(c)
+}
 
 type CacheAdaptor interface {
 	Get(ctx context.Context, key string) (string, error)
@@ -37,7 +46,9 @@ func (c *cachingTransport) RoundTrip(request *http.Request) (*http.Response, err
 	cachedResponse, cacheErr := c.cache.Get(ctx, requestKey)
 	if cacheErr != nil {
 		// TODO: log this error?
-	} else {
+	}
+
+	if !errors.Is(cacheErr, CacheNil) {
 		reader := bufio.NewReader(strings.NewReader(cachedResponse))
 
 		response, readErr := http.ReadResponse(reader, request)
