@@ -385,24 +385,27 @@ type PartnerItem struct {
 }
 
 type PartnerDescription struct {
-	AppId                       string                   `json:"appid"`
-	ClassId                     string                   `json:"classid"`
-	InstanceId                  string                   `json:"instanceid"`
-	IconUrl                     string                   `json:"icon_url"`
-	IconDragUrl                 string                   `json:"icon_drag_url"`
-	Name                        string                   `json:"name"`
-	MarketHashName              string                   `json:"market_hash_name"`
-	MarketName                  string                   `json:"market_name"`
-	NameColor                   string                   `json:"name_color"`
-	BackgroundColor             string                   `json:"background_color"`
-	Type                        string                   `json:"type"`
-	Tradable                    int                      `json:"tradable"`
-	Marketable                  int                      `json:"marketable"`
-	Commodity                   int                      `json:"commodity"`
-	MarketTradableRestriction   string                   `json:"market_tradable_restriction"`
-	MarketMarketableRestriction string                   `json:"market_marketable_restriction"`
-	DescriptionLines            []PartnerDescriptionLine `json:"descriptions"`
-	Tags                        []PartnerDescriptionTag  `json:"tags"`
+	AppId                       string          `json:"appid"`
+	ClassId                     string          `json:"classid"`
+	InstanceId                  string          `json:"instanceid"`
+	IconUrl                     string          `json:"icon_url"`
+	IconDragUrl                 string          `json:"icon_drag_url"`
+	Name                        string          `json:"name"`
+	MarketHashName              string          `json:"market_hash_name"`
+	MarketName                  string          `json:"market_name"`
+	NameColor                   string          `json:"name_color"`
+	BackgroundColor             string          `json:"background_color"`
+	Type                        string          `json:"type"`
+	Tradable                    int             `json:"tradable"`
+	Marketable                  int             `json:"marketable"`
+	Commodity                   int             `json:"commodity"`
+	MarketTradableRestriction   string          `json:"market_tradable_restriction"`
+	MarketMarketableRestriction string          `json:"market_marketable_restriction"`
+	JsonDescriptionLines        json.RawMessage `json:"descriptions"`
+	JsonTags                    json.RawMessage `json:"tags"`
+
+	DescriptionLines []PartnerDescriptionLine `json:"-"`
+	Tags             []PartnerDescriptionTag  `json:"-"`
 }
 
 type PartnerDescriptionLine struct {
@@ -450,6 +453,11 @@ func (c *Client) GetPartnerInventory(
 	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
 		return nil, sendErr
+	}
+
+	for _, description := range response.Descriptions {
+		_ = json.Unmarshal(description.JsonDescriptionLines, &description.DescriptionLines)
+		_ = json.Unmarshal(description.JsonTags, &description.Tags)
 	}
 
 	return &response, nil
