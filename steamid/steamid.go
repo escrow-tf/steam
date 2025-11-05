@@ -77,7 +77,7 @@ func ParseSteamID64(s string) (SteamID, error) {
 
 	parsedID, err := strconv.ParseUint(s, 10, 64)
 	if err != nil {
-		return steamID, eris.Errorf("can't parse steamID into int64: %w", err)
+		return steamID, eris.Wrapf(err, "can't parse steamID into int64")
 	}
 
 	steamID.accountID = uint32(parsedID & AccountIDMask)
