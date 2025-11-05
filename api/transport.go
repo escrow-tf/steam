@@ -198,11 +198,11 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 	}
 
 	contentType := FormContentType
-	var httpBody *bytes.Buffer
+	var httpBody io.Reader
 	if formValues != nil {
-		httpBody = &bytes.Buffer{}
 		if formValues.Has("input_protobuf_encoded") {
-			multipartWriter := multipart.NewWriter(httpBody)
+			bodyBuffer := &bytes.Buffer{}
+			multipartWriter := multipart.NewWriter(bodyBuffer)
 
 			for key, values := range formValues {
 				for _, value := range values {
@@ -219,11 +219,9 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 			}
 
 			contentType = multipartWriter.FormDataContentType()
+			httpBody = bodyBuffer
 		} else {
-			_, writeErr := httpBody.WriteString(formValues.Encode())
-			if writeErr != nil {
-				return eris.Wrap(writeErr, "failed to write multipart field in transport request")
-			}
+			httpBody = strings.NewReader(formValues.Encode())
 		}
 	}
 
