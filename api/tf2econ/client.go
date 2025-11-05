@@ -56,7 +56,7 @@ func (p PlayerItemsRequest) OldValues() (url.Values, error) {
 	}, nil
 }
 
-func (p PlayerItemsRequest) Values() (interface{}, error) {
+func (p PlayerItemsRequest) Values() (url.Values, error) {
 	return url.Values{
 		"steamid": []string{p.steamId.String()},
 	}, nil

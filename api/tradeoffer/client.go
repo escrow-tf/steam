@@ -63,7 +63,7 @@ func (t ActionRequest) OldValues() (url.Values, error) {
 	}, nil
 }
 
-func (t ActionRequest) Values() (interface{}, error) {
+func (t ActionRequest) Values() (url.Values, error) {
 	return url.Values{
 		"sessionid": []string{t.sessionId},
 	}, nil
@@ -141,7 +141,7 @@ type CreateRequest struct {
 	PartnerToken     string
 }
 
-func (c CreateRequest) Values() (interface{}, error) {
+func (c CreateRequest) Values() (url.Values, error) {
 	return c.OldValues()
 }
 
@@ -326,7 +326,7 @@ type PartnerInventoryRequest struct {
 	PartnerToken   string
 }
 
-func (p PartnerInventoryRequest) Values() (interface{}, error) {
+func (p PartnerInventoryRequest) Values() (url.Values, error) {
 	return p.OldValues()
 }
 

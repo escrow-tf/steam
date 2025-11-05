@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -59,10 +60,19 @@ func (g GetRsaKeyRequest) OldValues() (url.Values, error) {
 	return values, nil
 }
 
-func (g GetRsaKeyRequest) Values() (interface{}, error) {
-	values := make(url.Values)
-	values.Add("account_name", g.accountName)
-	return values, nil
+func (g GetRsaKeyRequest) Values() (url.Values, error) {
+	request := steamproto.CAuthentication_GetPasswordRSAPublicKey_Request{
+		AccountName: &g.accountName,
+	}
+
+	marshalled, err := proto.Marshal(&request)
+	if err != nil {
+		return nil, eris.Errorf("marshal failed %v", err)
+	}
+
+	return url.Values{
+		"input_protobuf_encoded": []string{base64.StdEncoding.EncodeToString(marshalled)},
+	}, nil
 }
 
 func (g GetRsaKeyRequest) Url() string {
@@ -71,7 +81,7 @@ func (g GetRsaKeyRequest) Url() string {
 
 type PublicRsaKey struct {
 	PublicKey rsa.PublicKey
-	Timestamp string
+	Timestamp uint64
 }
 
 type GetRsaKeyResponse struct {
@@ -82,46 +92,40 @@ type GetRsaKeyResponse struct {
 	} `json:"response"`
 }
 
-func (r GetRsaKeyResponse) PublicKey() (PublicRsaKey, error) {
-	exponent, err := strconv.ParseInt(r.Response.PublicKeyExp, 16, 64)
-	if err != nil {
-		return PublicRsaKey{}, eris.Errorf("error parsing public key exponent %v", err)
-	}
-
-	modulus := big.NewInt(0)
-	modulus, ok := modulus.SetString(r.Response.PublicKeyMod, 16)
+func publicRsaKey(steamResponse *steamproto.CAuthentication_GetPasswordRSAPublicKey_Response) (*PublicRsaKey, error) {
+	mod, ok := new(big.Int).SetString(steamResponse.GetPublickeyMod(), 16)
 	if !ok {
-		return PublicRsaKey{}, eris.Errorf("error parsing public key modulus")
+		return nil, errors.New("invalid keyMod")
 	}
 
-	return PublicRsaKey{
+	exp, err := strconv.ParseInt(steamResponse.GetPublickeyExp(), 16, 32)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PublicRsaKey{
 		PublicKey: rsa.PublicKey{
-			E: int(exponent),
-			N: modulus,
+			N: mod,
+			E: int(exp),
 		},
-		Timestamp: r.Response.Timestamp,
+		Timestamp: steamResponse.GetTimestamp(),
 	}, nil
 }
 
-func (c *Client) GetPublicRsaKey(ctx context.Context, accountName string) (PublicRsaKey, error) {
+func (c *Client) GetPublicRsaKey(ctx context.Context, accountName string) (*PublicRsaKey, error) {
 	request := GetRsaKeyRequest{accountName: accountName}
-	var response GetRsaKeyResponse
+	var response steamproto.CAuthentication_GetPasswordRSAPublicKey_Response
 	sendErr := c.Transport.Send(ctx, request, &response)
 	if sendErr != nil {
-		return PublicRsaKey{}, sendErr
+		return nil, sendErr
 	}
 
-	publicRsaKey, rsaKeyErr := response.PublicKey()
-	if rsaKeyErr != nil {
-		return PublicRsaKey{}, rsaKeyErr
-	}
-
-	return publicRsaKey, nil
+	return publicRsaKey(&response)
 }
 
 type EncryptedPassword struct {
 	Base64    string
-	TimeStamp string
+	TimeStamp uint64
 }
 
 // EncryptAccountPassword
@@ -204,7 +208,7 @@ type DeviceDetails struct {
 type StartSessionRequest struct {
 	AccountName         string
 	EncryptedPassword   string
-	EncryptionTimestamp string
+	EncryptionTimestamp uint64
 	Persistence         steamproto.ESessionPersistence
 	DeviceDetails       DeviceDetails
 	Language            uint32
@@ -256,7 +260,7 @@ func (r StartSessionRequest) OldValues() (url.Values, error) {
 	values.Add("device_friendly_name", r.DeviceDetails.FriendlyName)
 	values.Add("account_name", r.AccountName)
 	values.Add("encrypted_password", r.EncryptedPassword)
-	values.Add("encryption_timestamp", r.EncryptionTimestamp)
+	values.Add("encryption_timestamp", strconv.FormatUint(r.EncryptionTimestamp, 10))
 	values.Add("remember_login", strconv.FormatBool(r.Persistence == steamproto.ESessionPersistence_k_ESessionPersistence_Persistent))
 	values.Add("platform_type", strconv.Itoa(int(r.DeviceDetails.PlatformType)))
 	values.Add("persistence", strconv.Itoa(int(r.Persistence)))
@@ -268,8 +272,8 @@ func (r StartSessionRequest) OldValues() (url.Values, error) {
 	return values, nil
 }
 
-func (r StartSessionRequest) Values() (interface{}, error) {
-	return r.OldValues()
+func (r StartSessionRequest) Values() (url.Values, error) {
+	rememberLogin := r.Persistence == steamproto.ESessionPersistence_k_ESessionPersistence_Persistent
 
 	var websiteId string
 	switch r.DeviceDetails.PlatformType {
@@ -283,27 +287,19 @@ func (r StartSessionRequest) Values() (interface{}, error) {
 		return nil, eris.Errorf("unsupported platform type %v", r.DeviceDetails.PlatformType)
 	}
 
-	rememberLogin := r.Persistence == steamproto.ESessionPersistence_k_ESessionPersistence_Persistent
-
 	request := steamproto.CAuthentication_BeginAuthSessionViaCredentials_Request{
+		DeviceFriendlyName:  &r.DeviceDetails.FriendlyName,
 		AccountName:         &r.AccountName,
-		EncryptedPassword:   nil,
-		EncryptionTimestamp: nil,
+		EncryptedPassword:   &r.EncryptedPassword,
+		EncryptionTimestamp: &r.EncryptionTimestamp,
 		RememberLogin:       &rememberLogin,
 		Persistence:         &r.Persistence,
 		WebsiteId:           &websiteId,
+		Language:            proto.Uint32(0),
 		DeviceDetails: &steamproto.CAuthentication_DeviceDetails{
 			DeviceFriendlyName: &r.DeviceDetails.FriendlyName,
 			PlatformType:       &r.DeviceDetails.PlatformType,
-			OsType:             &r.DeviceDetails.OsType,
-			//GamingDeviceType:   &r.DeviceDetails.GamingDeviceType,
-			//ClientCount:        nil,
-			//MachineId:          nil,
-			//AppType:            nil,
 		},
-		GuardData: nil,
-		Language:  &r.Language,
-		QosLevel:  &r.QosLevel,
 	}
 
 	marshalled, err := proto.Marshal(&request)
@@ -311,14 +307,13 @@ func (r StartSessionRequest) Values() (interface{}, error) {
 		return nil, eris.Errorf("marshal failed %v", err)
 	}
 
-	values := make(url.Values)
-	values.Add("input_protobuf_encoded", base64.StdEncoding.EncodeToString(marshalled))
-
-	return values, nil
+	return url.Values{
+		"input_protobuf_encoded": []string{base64.StdEncoding.EncodeToString(marshalled)},
+	}, nil
 }
 
 func (r StartSessionRequest) Url() string {
-	return fmt.Sprintf("%v/IAuthenticationService/BeginAuthSessionViaCredentials/v1/", api.BaseURL)
+	return fmt.Sprintf("%v/IAuthenticationService/BeginAuthSessionViaCredentials/v1/?origin=SteamMobile", api.BaseURL)
 }
 
 type StartSessionResponse struct {
@@ -367,7 +362,7 @@ type UpdateSessionWithSteamGuardCodeRequest struct {
 	CodeType GuardType
 }
 
-func (r UpdateSessionWithSteamGuardCodeRequest) Values() (interface{}, error) {
+func (r UpdateSessionWithSteamGuardCodeRequest) Values() (url.Values, error) {
 	return r.OldValues()
 }
 
@@ -437,7 +432,7 @@ type PollSessionStatusRequest struct {
 	RequestID string
 }
 
-func (r PollSessionStatusRequest) Values() (interface{}, error) {
+func (r PollSessionStatusRequest) Values() (url.Values, error) {
 	return r.OldValues()
 }
 
@@ -510,7 +505,7 @@ type GenerateAccessTokenRequest struct {
 	RenewalType  TokenRenewalType `json:"renewal_type"`
 }
 
-func (r GenerateAccessTokenRequest) Values() (interface{}, error) {
+func (r GenerateAccessTokenRequest) Values() (url.Values, error) {
 	return r.OldValues()
 }
 

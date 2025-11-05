@@ -115,7 +115,7 @@ func (g GetTradeOfferRequest) OldValues() (url.Values, error) {
 	return values, nil
 }
 
-func (g GetTradeOfferRequest) Values() (interface{}, error) {
+func (g GetTradeOfferRequest) Values() (url.Values, error) {
 	values := make(url.Values)
 	values.Add("tradeofferid", strconv.FormatUint(g.id, 10))
 	values.Add("language", g.language)
@@ -151,7 +151,7 @@ type GetTradeOffersRequest struct {
 	language         string
 }
 
-func (g GetTradeOffersRequest) Values() (interface{}, error) {
+func (g GetTradeOffersRequest) Values() (url.Values, error) {
 	return g.OldValues()
 }
 

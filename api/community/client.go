@@ -60,7 +60,7 @@ func (p PlayerInventoryRequest) OldValues() (url.Values, error) {
 	return values, nil
 }
 
-func (p PlayerInventoryRequest) Values() (interface{}, error) {
+func (p PlayerInventoryRequest) Values() (url.Values, error) {
 	values := make(url.Values)
 	values.Add("l", p.language)
 	values.Add("count", strconv.FormatUint(uint64(p.count), 10))

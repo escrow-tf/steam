@@ -85,7 +85,7 @@ type Request interface {
 	Method() string
 	Url() string
 	OldValues() (url.Values, error)
-	Values() (interface{}, error)
+	Values() (url.Values, error)
 	Headers() (http.Header, error)
 	EnsureResponseSuccess(httpResponse *http.Response) error
 }
@@ -164,9 +164,20 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 
 	httpMethod := request.Method()
 
-	requestValues, valuesErr := request.OldValues()
-	if valuesErr != nil {
-		return valuesErr
+	var queryValues url.Values
+	var formValues url.Values
+
+	{
+		requestValues, valuesErr := request.Values()
+		if valuesErr != nil {
+			return valuesErr
+		}
+
+		if httpMethod == http.MethodGet {
+			queryValues = requestValues
+		} else {
+			formValues = requestValues
+		}
 	}
 
 	requestUrl := request.Url()
@@ -175,52 +186,44 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 	}
 
 	if request.RequiresApiKey() {
-		if requestValues == nil {
-			requestValues = make(url.Values)
+		if queryValues == nil {
+			queryValues = make(url.Values)
 		}
 
-		requestValues.Add("key", c.webApiKey)
+		queryValues.Add("key", c.webApiKey)
+	}
+
+	if queryValues != nil {
+		requestUrl += queryValues.Encode()
 	}
 
 	contentType := FormContentType
-	var httpBody io.Reader
-	if requestValues != nil {
-		if httpMethod == http.MethodGet {
-			requestUrl += requestValues.Encode()
-		} else {
-			body := &bytes.Buffer{}
-			writer := multipart.NewWriter(body)
-			defer func(writer *multipart.Writer) {
-				_ = writer.Close()
-			}(writer)
+	var httpBody *bytes.Buffer
+	if formValues != nil {
+		httpBody = &bytes.Buffer{}
+		if formValues.Has("input_protobuf_encoded") {
+			multipartWriter := multipart.NewWriter(httpBody)
 
-			for key, val := range requestValues {
-				fieldWriter, fieldErr := writer.CreateFormField(key)
-				if fieldErr != nil {
-					return fieldErr
-				}
-
-				if _, writeErr := fieldWriter.Write([]byte(val[0])); writeErr != nil {
-					panic(writeErr)
-				}
-
-				for idx, item := range val {
-					if idx == 0 {
-						continue
-					}
-
-					if _, writeErr := fieldWriter.Write([]byte(";")); writeErr != nil {
-						panic(writeErr)
-					}
-
-					if _, writeErr := fieldWriter.Write([]byte(item)); writeErr != nil {
-						panic(writeErr)
+			for key, values := range formValues {
+				for _, value := range values {
+					err := multipartWriter.WriteField(key, value)
+					if err != nil {
+						return eris.Wrap(err, "failed to write multipart field in transport request")
 					}
 				}
 			}
 
-			//contentType = writer.FormDataContentType()
-			httpBody = strings.NewReader(requestValues.Encode())
+			closeErr := multipartWriter.Close()
+			if closeErr != nil {
+				return eris.Wrap(closeErr, "failed to close multipart writer in transport request")
+			}
+
+			contentType = multipartWriter.FormDataContentType()
+		} else {
+			_, writeErr := httpBody.WriteString(formValues.Encode())
+			if writeErr != nil {
+				return eris.Wrap(writeErr, "failed to write multipart field in transport request")
+			}
 		}
 	}
 
@@ -229,7 +232,7 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 		return httpRequestErr
 	}
 
-	httpRequest.Header.Add("Accept", JsonContentType)
+	httpRequest.Header.Add("Accept", "application/json, text/plain, */*")
 	httpRequest.Header.Add("User-Agent", "okhttp/4.9.2")
 	if httpMethod == http.MethodPost {
 		httpRequest.Header.Add("Content-Type", contentType)

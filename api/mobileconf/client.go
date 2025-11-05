@@ -70,7 +70,7 @@ type Request struct {
 	totpTime time.Time
 }
 
-func (r Request) Values() (interface{}, error) {
+func (r Request) Values() (url.Values, error) {
 	return r.OldValues()
 }
 

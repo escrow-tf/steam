@@ -39,7 +39,7 @@ func (c *Client) AlignTime(ctx context.Context) error {
 
 type QueryTimeRequest struct{}
 
-func (q QueryTimeRequest) Values() (interface{}, error) {
+func (q QueryTimeRequest) Values() (url.Values, error) {
 	return q.OldValues()
 }
 
