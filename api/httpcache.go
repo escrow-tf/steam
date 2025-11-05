@@ -2,16 +2,16 @@ package api
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"net/http"
 	"net/http/httputil"
+	"strings"
 	"time"
 )
 
 type CacheAdaptor interface {
-	Get(ctx context.Context, key string) ([]byte, error)
-	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
+	Get(ctx context.Context, key string) (string, error)
+	Set(ctx context.Context, key string, value string, ttl time.Duration) error
 }
 
 type cachingTransport struct {
@@ -37,10 +37,8 @@ func (c *cachingTransport) RoundTrip(request *http.Request) (*http.Response, err
 	cachedResponse, cacheErr := c.cache.Get(ctx, requestKey)
 	if cacheErr != nil {
 		// TODO: log this error?
-	}
-
-	if cachedResponse != nil {
-		reader := bufio.NewReader(bytes.NewReader(cachedResponse))
+	} else {
+		reader := bufio.NewReader(strings.NewReader(cachedResponse))
 
 		response, readErr := http.ReadResponse(reader, request)
 		if readErr != nil {
@@ -77,7 +75,7 @@ func (c *cachingTransport) cacheResponse(
 		return dumpErr
 	}
 
-	if err := c.cache.Set(ctx, key, responseDump, ttl); err != nil {
+	if err := c.cache.Set(ctx, key, string(responseDump), ttl); err != nil {
 		return err
 	}
 
