@@ -61,18 +61,9 @@ func (g GetRsaKeyRequest) OldValues() (url.Values, error) {
 }
 
 func (g GetRsaKeyRequest) Values() (url.Values, error) {
-	request := steamproto.CAuthentication_GetPasswordRSAPublicKey_Request{
+	return api.MarshalSteamEncodedValues(&steamproto.CAuthentication_GetPasswordRSAPublicKey_Request{
 		AccountName: &g.accountName,
-	}
-
-	marshalled, err := proto.Marshal(&request)
-	if err != nil {
-		return nil, eris.Errorf("marshal failed %v", err)
-	}
-
-	return url.Values{
-		"input_protobuf_encoded": []string{base64.StdEncoding.EncodeToString(marshalled)},
-	}, nil
+	})
 }
 
 func (g GetRsaKeyRequest) Url() string {
@@ -287,7 +278,7 @@ func (r StartSessionRequest) Values() (url.Values, error) {
 		return nil, eris.Errorf("unsupported platform type %v", r.DeviceDetails.PlatformType)
 	}
 
-	request := steamproto.CAuthentication_BeginAuthSessionViaCredentials_Request{
+	return api.MarshalSteamEncodedValues(&steamproto.CAuthentication_BeginAuthSessionViaCredentials_Request{
 		DeviceFriendlyName:  &r.DeviceDetails.FriendlyName,
 		AccountName:         &r.AccountName,
 		EncryptedPassword:   &r.EncryptedPassword,
@@ -300,16 +291,7 @@ func (r StartSessionRequest) Values() (url.Values, error) {
 			DeviceFriendlyName: &r.DeviceDetails.FriendlyName,
 			PlatformType:       &r.DeviceDetails.PlatformType,
 		},
-	}
-
-	marshalled, err := proto.Marshal(&request)
-	if err != nil {
-		return nil, eris.Errorf("marshal failed %v", err)
-	}
-
-	return url.Values{
-		"input_protobuf_encoded": []string{base64.StdEncoding.EncodeToString(marshalled)},
-	}, nil
+	})
 }
 
 func (r StartSessionRequest) Url() string {
