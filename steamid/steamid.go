@@ -60,10 +60,11 @@ type SteamID struct {
 	idType    Type
 	instance  Instance
 	accountID uint32
+	id        uint64
 }
 
-func ParseSteamID64(s string) (SteamID, error) {
-	steamID := SteamID{
+func ParseSteamID64(s string) (steamID SteamID, err error) {
+	steamID = SteamID{
 		original:  s,
 		universe:  UniverseInvalid,
 		idType:    TypeInvalid,
@@ -75,21 +76,25 @@ func ParseSteamID64(s string) (SteamID, error) {
 		return steamID, ErrorEmpty
 	}
 
-	parsedID, err := strconv.ParseUint(s, 10, 64)
+	steamID.id, err = strconv.ParseUint(s, 10, 64)
 	if err != nil {
 		return steamID, eris.Wrapf(err, "can't parse steamID into int64")
 	}
 
-	steamID.accountID = uint32(parsedID & AccountIDMask)
-	steamID.instance = Instance((parsedID >> 32) & AccountInstanceMask)
-	steamID.idType = Type((parsedID >> 52) & AccountTypeMask)
-	steamID.universe = Universe(parsedID >> 56)
+	steamID.accountID = uint32(steamID.id & AccountIDMask)
+	steamID.instance = Instance((steamID.id >> 32) & AccountInstanceMask)
+	steamID.idType = Type((steamID.id >> 52) & AccountTypeMask)
+	steamID.universe = Universe(steamID.id >> 56)
 
 	return steamID, nil
 }
 
 func (id SteamID) String() string {
 	return id.original
+}
+
+func (id SteamID) ID() uint64 {
+	return id.id
 }
 
 func (id SteamID) IsValid() bool {
