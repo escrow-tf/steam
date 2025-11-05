@@ -185,6 +185,9 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 		transport:        webTransport,
 		authClient:       authClient,
 		mobileConfClient: mobileConfClient,
+		tf2EconClient: &tf2econ.Client{
+			Transport: webTransport,
+		},
 		tradeOfferClient: &tradeoffer.Client{
 			Transport:     webTransport,
 			SessionIdFunc: GetSessionId,
