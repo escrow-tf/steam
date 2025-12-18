@@ -16,7 +16,7 @@ type Api interface {
 		partnerToken string,
 		myItems, theirItems []Item,
 		message string,
-	) (CreateResponse, error)
+	) (CreateOfferResponse, error)
 
 	GetPartnerInventory(
 		ctx context.Context,
