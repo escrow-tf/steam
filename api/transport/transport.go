@@ -13,7 +13,6 @@ import (
 	"github.com/escrow-tf/steam/steamlang"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/rotisserie/eris"
-	"google.golang.org/protobuf/proto"
 )
 
 type PrivateTransport struct {
@@ -21,21 +20,24 @@ type PrivateTransport struct {
 	retryClient *retryablehttp.Client
 }
 
-type PrivateTransportRequest[I Transformer, O any] struct {
-	CanRetry bool
-	BaseUrl  url.URL
-	Path     string
-	Headers  http.Header
-	Params   url.Values
-	Method   string
-	Body     I
+type PrivateTransportRequest[I any, O any] struct {
+	CanRetry    bool
+	BaseUrl     url.URL
+	Path        string
+	Headers     http.Header
+	Params      url.Values
+	Method      string
+	Body        I
+	Transformer Transformer[I]
+	Decoder     Decoder[O]
 }
 
-func SendReq[I Transformer, O any](
+func SendReq[I any, O any](
 	ctx context.Context,
 	transport PrivateTransport,
 	request PrivateTransportRequest[I, O],
-) (*http.Response, error) {
+	response O,
+) error {
 	requestUrl := request.BaseUrl.JoinPath(request.Path).String() + "?"
 
 	if request.Params != nil {
@@ -49,7 +51,7 @@ func SendReq[I Transformer, O any](
 
 	httpRequest, err := http.NewRequestWithContext(ctx, request.Method, requestUrl, nil)
 	if err != nil {
-		return nil, eris.Wrap(err, "error creating new request")
+		return eris.Wrap(err, "error creating new request")
 	}
 
 	httpRequest.Header.Set("Accept", "application/json, text/plain, */*")
@@ -65,70 +67,24 @@ func SendReq[I Transformer, O any](
 		httpRequest.Header.Set(header, value)
 	}
 
-	if err = request.Body.Transform(httpRequest); err != nil {
-		return nil, err
+	if err = request.Transformer.Transform(request.Body, httpRequest); err != nil {
+		return err
 	}
 
 	httpResponse, err := httpClient.Do(httpRequest)
 	if err != nil {
-		return nil, eris.Wrap(err, "error performing request")
+		return eris.Wrap(err, "error performing request")
 	}
 
 	if err = steamlang.EnsureSuccessResponse(httpResponse); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = steamlang.EnsureEResultResponse(httpResponse); err != nil {
-		return nil, err
+		return err
 	}
 
-	return httpResponse, nil
-}
-
-func SendProto[I Transformer, O proto.Message](
-	ctx context.Context,
-	transport PrivateTransport,
-	request PrivateTransportRequest[I, O],
-	response O,
-) error {
-	httpResponse, sendErr := SendReq(ctx, transport, request)
-	if sendErr != nil {
-		return sendErr
-	}
-
-	responseBody, err := io.ReadAll(httpResponse.Body)
-	if err != nil {
-		return eris.Wrap(err, "couldn't read request")
-	}
-
-	if err = proto.Unmarshal(responseBody, response); err != nil {
-		return eris.Wrap(err, "error unmarshalling protobuf response body")
-	}
-
-	return nil
-}
-
-func SendJson[I Transformer, O any](
-	ctx context.Context,
-	transport PrivateTransport,
-	request PrivateTransportRequest[I, O],
-	response O,
-) error {
-	httpResponse, sendErr := SendReq(ctx, transport, request)
-	if sendErr != nil {
-		return sendErr
-	}
-
-	responseBody, err := io.ReadAll(httpResponse.Body)
-	if err != nil {
-		return eris.Wrap(err, "couldn't read request")
-	}
-
-	if err = json.Unmarshal(responseBody, response); err != nil {
-		return eris.Wrap(err, "error unmarshalling json response body")
-	}
-
-	return nil
+	return request.Decoder.Decode(httpResponse.Body, response)
 }
 
 type PublicTransportRequest[R any] struct {

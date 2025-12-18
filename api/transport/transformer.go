@@ -13,22 +13,32 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Transformer interface {
-	Transform(request *http.Request) error
+type Transformer[T any] interface {
+	Transform(input T, request *http.Request) error
 }
 
-type EmptyTransformer struct{}
+func EmptyTransformer[T any]() Transformer[T] {
+	return emptyTransformer[T]{}
+}
 
-func (e *EmptyTransformer) Transform(request *http.Request) error {
+func UrlEncodeTransformer[T any]() Transformer[T] {
+	return urlEncodeTransformer[T]{}
+}
+
+func ProtoTransformer[T proto.Message]() Transformer[T] {
+	return protoTransformer[T]{}
+}
+
+type emptyTransformer[T any] struct{}
+
+func (e emptyTransformer[T]) Transform(input T, request *http.Request) error {
 	return nil
 }
 
-type UrlEncodeTransformer[T any] struct {
-	Value T
-}
+type urlEncodeTransformer[T any] struct{}
 
-func (u UrlEncodeTransformer[T]) Transform(request *http.Request) error {
-	values, err := query.Values(u.Value)
+func (u urlEncodeTransformer[T]) Transform(input T, request *http.Request) error {
+	values, err := query.Values(input)
 	if err != nil {
 		return eris.Wrap(err, "error encoding values from type")
 	}
@@ -38,12 +48,10 @@ func (u UrlEncodeTransformer[T]) Transform(request *http.Request) error {
 	return nil
 }
 
-type ProtoTransformer[T proto.Message] struct {
-	Value T
-}
+type protoTransformer[T proto.Message] struct{}
 
-func (p *ProtoTransformer[T]) Transform(request *http.Request) error {
-	marshalled, err := proto.Marshal(p.Value)
+func (p protoTransformer[T]) Transform(input T, request *http.Request) error {
+	marshalled, err := proto.Marshal(input)
 	if err != nil {
 		return eris.Wrap(err, "failed to marshall proto message")
 	}

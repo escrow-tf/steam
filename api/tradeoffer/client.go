@@ -1,19 +1,19 @@
 ﻿package tradeoffer
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/escrow-tf/steam/api"
 	"github.com/escrow-tf/steam/api/transport"
 	"github.com/escrow-tf/steam/steamid"
 	"github.com/escrow-tf/steam/steamlang"
+	"github.com/google/go-querystring/query"
 	"github.com/rotisserie/eris"
 )
 
@@ -32,16 +32,16 @@ type AcceptResponse struct {
 	TradeOfferId uint64 `json:"tradeofferid,string"`
 }
 
-func Accept(id uint64, sessionId string) (transport.PrivateTransportRequest[transport.UrlEncodeTransformer[AcceptBody], AcceptResponse], error) {
-	request := transport.PrivateTransportRequest[transport.UrlEncodeTransformer[AcceptBody], AcceptResponse]{
+func Accept(id uint64, sessionId string) (transport.PrivateTransportRequest[*AcceptBody, *AcceptResponse], error) {
+	request := transport.PrivateTransportRequest[*AcceptBody, *AcceptResponse]{
 		BaseUrl: CommunityBase,
 		Path:    fmt.Sprintf("/tradeoffer/%d/accept", id),
 		Method:  http.MethodPost,
-		Body: transport.UrlEncodeTransformer[AcceptBody]{
-			Value: AcceptBody{
-				SessionID: sessionId,
-			},
+		Body: &AcceptBody{
+			SessionID: sessionId,
 		},
+		Transformer: transport.UrlEncodeTransformer[*AcceptBody](),
+		Decoder:     transport.JsonDecoder[*AcceptResponse](),
 	}
 
 	return request, nil
@@ -55,16 +55,16 @@ type DeclineResponse struct {
 	TradeOfferId uint64 `json:"tradeofferid,string"`
 }
 
-func Decline(id uint64, sessionId string) (transport.PrivateTransportRequest[transport.UrlEncodeTransformer[DeclineBody], DeclineResponse], error) {
-	request := transport.PrivateTransportRequest[transport.UrlEncodeTransformer[DeclineBody], DeclineResponse]{
+func Decline(id uint64, sessionId string) (transport.PrivateTransportRequest[*DeclineBody, *DeclineResponse], error) {
+	request := transport.PrivateTransportRequest[*DeclineBody, *DeclineResponse]{
 		BaseUrl: CommunityBase,
 		Path:    fmt.Sprintf("/tradeoffer/%d/decline", id),
 		Method:  http.MethodPost,
-		Body: transport.UrlEncodeTransformer[DeclineBody]{
-			Value: DeclineBody{
-				SessionID: sessionId,
-			},
+		Body: &DeclineBody{
+			SessionID: sessionId,
 		},
+		Transformer: transport.UrlEncodeTransformer[*DeclineBody](),
+		Decoder:     transport.JsonDecoder[*DeclineResponse](),
 	}
 
 	return request, nil
@@ -78,16 +78,16 @@ type CancelResponse struct {
 	TradeOfferId uint64 `json:"tradeofferid,string"`
 }
 
-func Cancel(id uint64, sessionId string) (transport.PrivateTransportRequest[transport.UrlEncodeTransformer[CancelBody], CancelResponse], error) {
-	request := transport.PrivateTransportRequest[transport.UrlEncodeTransformer[CancelBody], CancelResponse]{
+func Cancel(id uint64, sessionId string) (transport.PrivateTransportRequest[*CancelBody, *CancelResponse], error) {
+	request := transport.PrivateTransportRequest[*CancelBody, *CancelResponse]{
 		BaseUrl: CommunityBase,
 		Path:    fmt.Sprintf("/tradeoffer/%d/cancel", id),
 		Method:  http.MethodPost,
-		Body: transport.UrlEncodeTransformer[CancelBody]{
-			Value: CancelBody{
-				SessionID: sessionId,
-			},
+		Body: &CancelBody{
+			SessionID: sessionId,
 		},
+		Transformer: transport.UrlEncodeTransformer[*CancelBody](),
+		Decoder:     transport.JsonDecoder[*CancelResponse](),
 	}
 
 	return request, nil
@@ -100,8 +100,6 @@ type CreateOfferRequest struct {
 	Message          string `url:"tradeoffermessage"`
 	OfferJson        string `url:"json_tradeoffer"`
 	CreateParamsJson string `url:"trade_offer_create_params"`
-	PartnerAccountId uint32 `url:"-"`
-	PartnerToken     string `url:"-"`
 }
 
 type CreateOfferResponse struct {
@@ -118,7 +116,7 @@ func (c CreateOfferResponse) Verify() (*VerifiedCreateResponse, error) {
 	//
 	// A specific error message:
 	//  {"strError":"You have sent too many trade offers, or have too many outstanding trade offers with
-	//  snuppy. Please cancel some before sending more."}
+	//  <bot display name>. Please cancel some before sending more."}
 	//
 	// In both of these cases, steam returns a 500 error code despite these clearly being 4xx errors, and doesn't
 	// give us an EResult header in the response.
@@ -171,22 +169,47 @@ func (c CreateOfferResponse) Verify() (*VerifiedCreateResponse, error) {
 	return &verified, nil
 }
 
+type createParams struct {
+	AccessToken string `json:"trade_offer_access_token"`
+}
+
+type offer struct {
+	NewVersion bool  `json:"newversion"`
+	Version    int   `json:"version"`
+	Me         party `json:"me"`
+	Them       party `json:"them"`
+}
+
+type party struct {
+	Assets   []Item     `json:"assets"`
+	Currency []struct{} `json:"currency"`
+	Ready    bool       `json:"ready"`
+}
+
+type Item struct {
+	AppId      uint64 `json:"appid"`
+	ContextId  string `json:"contextid"`
+	Amount     uint64 `json:"amount"`
+	AssetId    string `json:"assetid,omitempty"`
+	CurrencyId string `json:"currencyid,omitempty"`
+}
+
 func Create(
 	other steamid.SteamID,
 	partnerToken string,
 	myItems, theirItems []Item,
 	message string,
 	sessionId string,
-) (*transport.PrivateTransportRequest[transport.UrlEncodeTransformer[CreateOfferRequest], CreateOfferResponse], error) {
-	offerJson, offerJsonErr := json.Marshal(Offer{
+) (*transport.PrivateTransportRequest[*CreateOfferRequest, *CreateOfferResponse], error) {
+	offerJson, offerJsonErr := json.Marshal(offer{
 		NewVersion: true,
 		Version:    3,
-		Me: Party{
+		Me: party{
 			Assets:   myItems,
 			Currency: []struct{}{},
 			Ready:    false,
 		},
-		Them: Party{
+		Them: party{
 			Assets:   theirItems,
 			Currency: []struct{}{},
 			Ready:    false,
@@ -196,7 +219,7 @@ func Create(
 		return nil, eris.Wrap(offerJsonErr, "error marshalling offer")
 	}
 
-	createParamsJson, createParamsJsonErr := json.Marshal(CreateParams{
+	createParamsJson, createParamsJsonErr := json.Marshal(createParams{
 		AccessToken: partnerToken,
 	})
 	if createParamsJsonErr != nil {
@@ -211,7 +234,7 @@ func Create(
 		encodedPartnerToken,
 	)
 
-	transportRequest := &transport.PrivateTransportRequest[transport.UrlEncodeTransformer[CreateOfferRequest], CreateOfferResponse]{
+	transportRequest := &transport.PrivateTransportRequest[*CreateOfferRequest, *CreateOfferResponse]{
 		CanRetry: false,
 		BaseUrl:  CommunityBase,
 		Path:     "/tradeoffer/new/send",
@@ -219,373 +242,89 @@ func Create(
 			"Referer": []string{referer},
 		},
 		Method: http.MethodPost,
-		Body: transport.UrlEncodeTransformer[CreateOfferRequest]{
-			Value: CreateOfferRequest{
-				SessionId:        sessionId,
-				ServerId:         "1",
-				Partner:          other.String(),
-				Message:          message,
-				OfferJson:        string(offerJson),
-				CreateParamsJson: string(createParamsJson),
-				PartnerAccountId: other.AccountId(),
-				PartnerToken:     partnerToken,
-			},
+		Body: &CreateOfferRequest{
+			SessionId:        sessionId,
+			ServerId:         "1",
+			Partner:          other.String(),
+			Message:          message,
+			OfferJson:        string(offerJson),
+			CreateParamsJson: string(createParamsJson),
 		},
+		Transformer: transport.UrlEncodeTransformer[*CreateOfferRequest](),
+		Decoder:     transport.JsonDecoder[*CreateOfferResponse](),
 	}
 
 	return transportRequest, nil
 }
 
-type Client struct {
-	Transport     api.Transport
-	SessionIdFunc SessionIdFunc
-}
-
-type ActionResponse struct {
-	TradeOfferId uint64 `json:"tradeofferid,string"`
-}
-
-type ActionRequest struct {
-	id        uint64
-	verb      string
-	sessionId string
-}
-
-func (t ActionRequest) CacheTTL() time.Duration {
-	return 0
-}
-
-func (t ActionRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
-	return steamlang.EnsureSuccessResponse(httpResponse)
-}
-
-func (t ActionRequest) Retryable() bool {
-	return false
-}
-
-func (t ActionRequest) RequiresApiKey() bool {
-	return false
-}
-
-func (t ActionRequest) Method() string {
-	return http.MethodPost
-}
-
-func (t ActionRequest) Url() string {
-	return fmt.Sprintf("https://steamcommunity.com/tradeoffer/%d/%s", t.id, t.verb)
-}
-
-func (t ActionRequest) OldValues() (url.Values, error) {
-	return url.Values{
-		"sessionid": []string{t.sessionId},
-	}, nil
-}
-
-func (t ActionRequest) Values() (url.Values, error) {
-	return url.Values{
-		"sessionid": []string{t.sessionId},
-	}, nil
-}
-
-func (t ActionRequest) Headers() (http.Header, error) {
-	// TODO: do we need referer when acting on a request?
-	return nil, nil
-}
-
-func (c *Client) act(ctx context.Context, id uint64, verb string) (*ActionResponse, error) {
-	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
-	if sessionIdErr != nil {
-		return nil, eris.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
-	}
-
-	request := ActionRequest{
-		id:        id,
-		verb:      verb,
-		sessionId: sessionId,
-	}
-	var response ActionResponse
-	sendErr := c.Transport.Send(ctx, request, &response)
-	if sendErr != nil {
-		return nil, sendErr
-	}
-	return &response, nil
-}
-
-func (c *Client) Accept(ctx context.Context, id uint64) (*ActionResponse, error) {
-	return c.act(ctx, id, "accept")
-}
-
-func (c *Client) Decline(ctx context.Context, id uint64) (*ActionResponse, error) {
-	return c.act(ctx, id, "decline")
-}
-
-func (c *Client) Cancel(ctx context.Context, id uint64) (*ActionResponse, error) {
-	return c.act(ctx, id, "cancel")
-}
-
-type CreateParams struct {
-	AccessToken string `json:"trade_offer_access_token"`
-}
-
-type Offer struct {
-	NewVersion bool  `json:"newversion"`
-	Version    int   `json:"version"`
-	Me         Party `json:"me"`
-	Them       Party `json:"them"`
-}
-
-type Party struct {
-	Assets   []Item     `json:"assets"`
-	Currency []struct{} `json:"currency"`
-	Ready    bool       `json:"ready"`
-}
-
-type Item struct {
-	AppId      uint64 `json:"appid"`
-	ContextId  string `json:"contextid"`
-	Amount     uint64 `json:"amount"`
-	AssetId    string `json:"assetid,omitempty"`
-	CurrencyId string `json:"currencyid,omitempty"`
-}
-
-type CreateRequest struct {
-	SessionId        string
-	ServerId         string
-	Partner          string
-	Message          string
-	OfferJson        string
-	CreateParamsJson string
-	PartnerAccountId uint32
-	PartnerToken     string
-}
-
-func (c CreateRequest) Values() (url.Values, error) {
-	return c.OldValues()
-}
-
-func (c CreateRequest) CacheTTL() time.Duration {
-	return 0
-}
-
-func (c CreateRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
-	// Create will check strError in this case
-	if httpResponse.StatusCode == 500 {
-		return nil
-	}
-	return steamlang.EnsureSuccessResponse(httpResponse)
-}
-
-func (c CreateRequest) Retryable() bool {
-	return false
-}
-
-func (c CreateRequest) RequiresApiKey() bool {
-	return false
-}
-
-func (c CreateRequest) Method() string {
-	return http.MethodPost
-}
-
-func (c CreateRequest) Url() string {
-	return "https://steamcommunity.com/tradeoffer/new/send"
-}
-
-func (c CreateRequest) OldValues() (url.Values, error) {
-	values := make(url.Values)
-	values.Add("sessionid", c.SessionId)
-	values.Add("serverid", c.ServerId)
-	values.Add("partner", c.Partner)
-	values.Add("tradeoffermessage", c.Message)
-	values.Add("json_tradeoffer", c.OfferJson)
-	values.Add("trade_offer_create_params", c.CreateParamsJson)
-	return values, nil
-}
-
-func (c CreateRequest) Headers() (http.Header, error) {
-	encodedPartnerAccountId := strconv.FormatUint(uint64(c.PartnerAccountId), 10)
-	encodedPartnerToken := url.QueryEscape(c.PartnerToken)
-	referer := fmt.Sprintf(
-		"https://steamcommunity.com/tradeoffer/new/?partner=%s&token=%s",
-		encodedPartnerAccountId,
-		encodedPartnerToken,
-	)
-	return http.Header{
-		"Referer": []string{referer},
-	}, nil
-}
-
-func (c *Client) Create(
-	ctx context.Context,
-	other steamid.SteamID,
-	partnerToken string,
-	myItems, theirItems []Item,
-	message string,
-) (CreateOfferResponse, error) {
-	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
-	if sessionIdErr != nil {
-		return CreateOfferResponse{}, eris.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
-	}
-
-	offer := Offer{
-		NewVersion: true,
-		Version:    3,
-		Me: Party{
-			Assets:   myItems,
-			Currency: []struct{}{},
-			Ready:    false,
-		},
-		Them: Party{
-			Assets:   theirItems,
-			Currency: []struct{}{},
-			Ready:    false,
-		},
-	}
-
-	offerJson, offerJsonErr := json.Marshal(offer)
-	if offerJsonErr != nil {
-		return CreateOfferResponse{}, eris.Errorf("error marshalling Offer: %v", offerJsonErr)
-	}
-
-	createParams := CreateParams{
-		AccessToken: partnerToken,
-	}
-
-	createParamsJson, createParamsJsonErr := json.Marshal(createParams)
-	if createParamsJsonErr != nil {
-		return CreateOfferResponse{}, eris.Errorf("error marshalling CreateParams: %v", createParamsJsonErr)
-	}
-
-	request := CreateRequest{
-		SessionId:        sessionId,
-		ServerId:         "1",
-		Partner:          other.String(),
-		Message:          message,
-		OfferJson:        string(offerJson),
-		CreateParamsJson: string(createParamsJson),
-		PartnerAccountId: other.AccountId(),
-		PartnerToken:     partnerToken,
-	}
-	var response CreateOfferResponse
-	sendErr := c.Transport.Send(ctx, request, &response)
-	if sendErr != nil {
-		return CreateOfferResponse{}, eris.Errorf("error creating new Offer: %v", sendErr)
-	}
-
-	// There are a couple of error formats we're likely to receive back:
-	// A generic error message with an error number at the end:
-	//  {"strError":"There was an error sending your trade offer.  Please try again later. (ERROR NUMBER)"}
-	//
-	// A specific error message:
-	//  {"strError":"You have sent too many trade offers, or have too many outstanding trade offers with
-	//  snuppy. Please cancel some before sending more."}
-	//
-	// In both of these cases, steam returns a 500 error code despite these clearly being 4xx errors, and doesn't
-	// give us an EResult header in the response.
-
-	if strings.HasPrefix(response.Error, "There was an error sending your trade offer.  Please try again later. (") {
-		leftParenIdx := strings.Index(response.Error, "(")
-		rightParenIdx := strings.Index(response.Error, ")")
-		eResultString := response.Error[leftParenIdx:rightParenIdx]
-		eResult, err := strconv.ParseInt(eResultString, 10, 32)
-		if err != nil {
-			return CreateOfferResponse{}, eris.Errorf("error sending offer: %v", response.Error)
-		}
-
-		switch steamlang.EResult(eResult) {
-		case steamlang.InvalidStateResult:
-			return CreateOfferResponse{}, InvalidStateError
-		case steamlang.AccessDeniedResult:
-			return CreateOfferResponse{}, AccessDeniedError
-		case steamlang.TimeoutResult:
-			return CreateOfferResponse{}, TimeoutError
-		case steamlang.ServiceUnavailableResult:
-			return CreateOfferResponse{}, ServiceUnavailableError
-		case steamlang.LimitExceededResult:
-			return CreateOfferResponse{}, TooManyTradeOffersError
-		case steamlang.RevokedResult:
-			return CreateOfferResponse{}, ItemsDontExistError
-		case steamlang.AlreadyRedeemedResult:
-			return CreateOfferResponse{}, ChangedPersonaNameRecentlyError
-		}
-
-		return CreateOfferResponse{}, steamlang.EResultError(steamlang.EResult(eResult))
-	}
-
-	if strings.HasPrefix(
-		response.Error,
-		"You have sent too many trade offers, or have too many outstanding trade offers with",
-	) {
-		return CreateOfferResponse{}, TooManyTradeOffersError
-	}
-
-	if response.Error != "" {
-		return CreateOfferResponse{}, eris.Errorf("error sending offer: %v", response.Error)
-	}
-
-	if response.TradeOfferId == 0 {
-		return CreateOfferResponse{}, eris.Errorf("error creating offer: steam returned tradeofferid 0")
-	}
-
-	return response, nil
-}
-
 type PartnerInventoryRequest struct {
-	SessionId string
-	AppId     uint64
-	ContextId string
-
-	PartnerSteamId steamid.SteamID
-	PartnerToken   string
+	SessionId string `url:"sessionid"`
+	AppId     uint64 `url:"appid"`
+	ContextId string `url:"contextid"`
+	Partner   string `url:"partner"`
 }
 
-func (p PartnerInventoryRequest) Values() (url.Values, error) {
-	return p.OldValues()
-}
-
-func (p PartnerInventoryRequest) CacheTTL() time.Duration {
-	return 0
-}
-
-func (p PartnerInventoryRequest) Retryable() bool {
-	return true
-}
-
-func (p PartnerInventoryRequest) RequiresApiKey() bool {
-	return false
-}
-
-func (p PartnerInventoryRequest) Method() string {
-	return http.MethodGet
-}
-
-func (p PartnerInventoryRequest) Url() string {
-	return "https://steamcommunity.com/tradeoffer/new/partnerinventory/"
-}
-
-func (p PartnerInventoryRequest) OldValues() (url.Values, error) {
-	values := make(url.Values)
-	values.Add("sessionid", p.SessionId)
-	values.Add("partner", p.PartnerSteamId.String())
-	values.Add("appid", url.QueryEscape(strconv.FormatUint(p.AppId, 10)))
-	values.Add("contextid", url.QueryEscape(p.ContextId))
-	return values, nil
-}
-
-func (p PartnerInventoryRequest) Headers() (http.Header, error) {
+func PartnerInventory(
+	partnerId steamid.SteamID,
+	partnerToken string,
+	appId uint64,
+	contextId string,
+	sessionId string,
+) (*transport.PrivateTransportRequest[*PartnerInventoryRequest, *PartnerInventoryResponse], error) {
 	referer := fmt.Sprintf(
 		"https://steamcommunity.com/tradeoffer/new/?partner=%d&token=%s",
-		p.PartnerSteamId.AccountId(),
-		url.QueryEscape(p.PartnerToken),
+		partnerId.AccountId(),
+		url.QueryEscape(partnerToken),
 	)
 
-	return http.Header{
-		"Referer": []string{referer},
-	}, nil
+	params, err := query.Values(PartnerInventoryRequest{
+		SessionId: sessionId,
+		AppId:     appId,
+		ContextId: contextId,
+		Partner:   partnerId.String(),
+	})
+
+	if err != nil {
+		return nil, eris.Wrap(err, "error creating params for request")
+	}
+
+	request := &transport.PrivateTransportRequest[*PartnerInventoryRequest, *PartnerInventoryResponse]{
+		CanRetry:    true,
+		BaseUrl:     CommunityBase,
+		Path:        "/tradeoffer/new/partnerinventory/",
+		Headers:     http.Header{"Referer": []string{referer}},
+		Params:      params,
+		Method:      http.MethodGet,
+		Body:        nil,
+		Transformer: transport.EmptyTransformer[*PartnerInventoryRequest](),
+		Decoder:     partnerInventoryResponseDecoder{},
+	}
+
+	return request, nil
 }
 
-func (p PartnerInventoryRequest) EnsureResponseSuccess(httpResponse *http.Response) error {
-	return steamlang.EnsureSuccessResponse(httpResponse)
+type partnerInventoryResponseDecoder struct{}
+
+func (p partnerInventoryResponseDecoder) Decode(response io.ReadCloser, result *PartnerInventoryResponse) error {
+	body, err := io.ReadAll(response)
+	if err != nil {
+		return eris.Wrap(err, "error reading response body")
+	}
+
+	if err = json.Unmarshal(body, result); err != nil {
+		return eris.Wrap(err, "error unmarshalling json response")
+	}
+
+	for key, description := range result.Descriptions {
+		if err = json.Unmarshal(description.JsonDescriptionLines, &description.DescriptionLines); err != nil {
+			return eris.Wrapf(err, "error unmarshalling json description line, key: %d", key)
+		}
+		if err = json.Unmarshal(description.JsonTags, &description.Tags); err != nil {
+			return eris.Wrapf(err, "error unmarshalling json tag, key: %d", key)
+		}
+	}
+
+	return nil
 }
 
 type PartnerItem struct {
@@ -641,37 +380,4 @@ type PartnerInventoryResponse struct {
 	Descriptions map[string]PartnerDescription `json:"rgDescriptions"`
 	More         bool                          `json:"more"`
 	MoreStart    json.RawMessage               `json:"more_start"`
-}
-
-func (c *Client) GetPartnerInventory(
-	ctx context.Context,
-	partnerId steamid.SteamID,
-	partnerToken string,
-	appId uint64,
-	contextId string,
-) (*PartnerInventoryResponse, error) {
-	sessionId, sessionIdErr := c.SessionIdFunc(c.Transport)
-	if sessionIdErr != nil {
-		return nil, eris.Errorf("error retrieving sessionId from transport: %v", sessionIdErr)
-	}
-
-	request := &PartnerInventoryRequest{
-		SessionId:      sessionId,
-		AppId:          appId,
-		ContextId:      contextId,
-		PartnerSteamId: partnerId,
-		PartnerToken:   partnerToken,
-	}
-	var response PartnerInventoryResponse
-	sendErr := c.Transport.Send(ctx, request, &response)
-	if sendErr != nil {
-		return nil, sendErr
-	}
-
-	for _, description := range response.Descriptions {
-		_ = json.Unmarshal(description.JsonDescriptionLines, &description.DescriptionLines)
-		_ = json.Unmarshal(description.JsonTags, &description.Tags)
-	}
-
-	return &response, nil
 }

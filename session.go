@@ -17,7 +17,6 @@ import (
 	"github.com/escrow-tf/steam/api/community"
 	"github.com/escrow-tf/steam/api/econ"
 	"github.com/escrow-tf/steam/api/mobileconf"
-	"github.com/escrow-tf/steam/api/tradeoffer"
 	"github.com/escrow-tf/steam/api/twofactor"
 	steamproto "github.com/escrow-tf/steam/proto/steam"
 	"github.com/escrow-tf/steam/steamid"
@@ -61,7 +60,6 @@ type WebSession struct {
 	communityClient  *community.Client
 	econClient       *econ.Client
 	mobileConfClient *mobileconf.Client
-	tradeOfferClient *tradeoffer.Client
 	twoFactorClient  *twofactor.Client
 
 	clientId        uint64
@@ -116,7 +114,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 
 	deviceDetails := auth.DeviceDetails{
 		//FriendlyName:     fmt.Sprintf("%s (steamguard-cli)", deviceHostName),
-		FriendlyName:     fmt.Sprintf("Galaxy S25"),
+		FriendlyName:     "Galaxy S25",
 		PlatformType:     steamproto.EAuthTokenPlatformType_k_EAuthTokenPlatformType_MobileApp,
 		OsType:           auth.AndroidUnknownOsType,
 		GamingDeviceType: auth.DefaultGamingDeviceType,
@@ -183,11 +181,7 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 		transport:        webTransport,
 		authClient:       authClient,
 		mobileConfClient: mobileConfClient,
-		tradeOfferClient: &tradeoffer.Client{
-			Transport:     webTransport,
-			SessionIdFunc: GetSessionId,
-		},
-		twoFactorClient: twoFactorClient,
+		twoFactorClient:  twoFactorClient,
 		communityClient: &community.Client{
 			Transport: webTransport,
 		},
@@ -340,8 +334,4 @@ func (w *WebSession) EconClient() econ.Api {
 
 func (w *WebSession) MobileConfClient() mobileconf.Api {
 	return w.mobileConfClient
-}
-
-func (w *WebSession) TradeOfferClient() tradeoffer.Api {
-	return w.tradeOfferClient
 }
