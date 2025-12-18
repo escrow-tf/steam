@@ -1,4 +1,4 @@
-﻿package steam
+package steam
 
 import (
 	"context"

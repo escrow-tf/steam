@@ -1,4 +1,4 @@
-﻿package tf2econ
+package tf2econ
 
 import (
 	"net/url"

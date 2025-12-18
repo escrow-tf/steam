@@ -1,4 +1,4 @@
-﻿package community
+package community
 
 import (
 	"context"

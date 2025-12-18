@@ -1,4 +1,4 @@
-﻿package steamid
+package steamid
 
 import "testing"
 

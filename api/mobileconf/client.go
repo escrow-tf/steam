@@ -1,4 +1,4 @@
-﻿package mobileconf
+package mobileconf
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-﻿package tradeoffer
+package tradeoffer
 
 import (
 	"encoding/json"

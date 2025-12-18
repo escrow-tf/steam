@@ -1,4 +1,4 @@
-﻿package econ
+package econ
 
 import (
 	"context"
