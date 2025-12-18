@@ -27,7 +27,7 @@ type UrlEncodeTransformer[T any] struct {
 	Value T
 }
 
-func (u *UrlEncodeTransformer[T]) Transform(request *http.Request) error {
+func (u UrlEncodeTransformer[T]) Transform(request *http.Request) error {
 	values, err := query.Values(u.Value)
 	if err != nil {
 		return eris.Wrap(err, "error encoding values from type")

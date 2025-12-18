@@ -17,7 +17,6 @@ import (
 	"github.com/escrow-tf/steam/api/community"
 	"github.com/escrow-tf/steam/api/econ"
 	"github.com/escrow-tf/steam/api/mobileconf"
-	"github.com/escrow-tf/steam/api/tf2econ"
 	"github.com/escrow-tf/steam/api/tradeoffer"
 	"github.com/escrow-tf/steam/api/twofactor"
 	steamproto "github.com/escrow-tf/steam/proto/steam"
@@ -62,7 +61,6 @@ type WebSession struct {
 	communityClient  *community.Client
 	econClient       *econ.Client
 	mobileConfClient *mobileconf.Client
-	tf2EconClient    *tf2econ.Client
 	tradeOfferClient *tradeoffer.Client
 	twoFactorClient  *twofactor.Client
 
@@ -185,9 +183,6 @@ func Authenticate(ctx context.Context, options Options) (*WebSession, error) {
 		transport:        webTransport,
 		authClient:       authClient,
 		mobileConfClient: mobileConfClient,
-		tf2EconClient: &tf2econ.Client{
-			Transport: webTransport,
-		},
 		tradeOfferClient: &tradeoffer.Client{
 			Transport:     webTransport,
 			SessionIdFunc: GetSessionId,
@@ -345,10 +340,6 @@ func (w *WebSession) EconClient() econ.Api {
 
 func (w *WebSession) MobileConfClient() mobileconf.Api {
 	return w.mobileConfClient
-}
-
-func (w *WebSession) Tf2EconClient() tf2econ.Api {
-	return w.tf2EconClient
 }
 
 func (w *WebSession) TradeOfferClient() tradeoffer.Api {
