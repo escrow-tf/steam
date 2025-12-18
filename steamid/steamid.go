@@ -81,6 +81,14 @@ func ParseSteamID64(s string) (steamID SteamID, err error) {
 		return steamID, eris.Wrapf(err, "can't parse steamID into int64")
 	}
 
+	/*
+		SteamID64 format:
+
+		0            8     12         32           64
+		+------------+------+----------+------------+
+		| universe   | type | instance | account id |
+		+------------+------+----------+------------+
+	*/
 	steamID.accountID = uint32(steamID.id & AccountIDMask)
 	steamID.instance = Instance((steamID.id >> 32) & AccountInstanceMask)
 	steamID.idType = Type((steamID.id >> 52) & AccountTypeMask)
