@@ -241,11 +241,9 @@ func (c HttpTransport) Send(ctx context.Context, request Request, response any) 
 		return headersErr
 	}
 
-	if headers != nil {
-		for headerKey, headerValues := range headers {
-			for _, headerValue := range headerValues {
-				httpRequest.Header.Add(headerKey, headerValue)
-			}
+	for headerKey, headerValues := range headers {
+		for _, headerValue := range headerValues {
+			httpRequest.Header.Add(headerKey, headerValue)
 		}
 	}
 
