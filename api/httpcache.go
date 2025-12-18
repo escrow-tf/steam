@@ -37,7 +37,7 @@ func (c *cachingTransport) RoundTrip(request *http.Request) (*http.Response, err
 
 	ctx := request.Context()
 
-	ttl, ttlOk := ctx.Value("steam-cachingTransport-cache-ttl").(time.Duration)
+	ttl, ttlOk := ctx.Value(cacheKey("steam-cachingTransport-cache-ttl")).(time.Duration)
 	if !ttlOk || ttl == 0 {
 		return c.next.RoundTrip(request)
 	}
@@ -93,8 +93,10 @@ func (c *cachingTransport) cacheResponse(
 	return nil
 }
 
+type cacheKey string
+
 func ContextWithCachingTtl(ctx context.Context, ttl time.Duration) context.Context {
-	return context.WithValue(ctx, "steam-cachingTransport-cache-ttl", ttl)
+	return context.WithValue(ctx, cacheKey("steam-cachingTransport-cache-ttl"), ttl)
 }
 
 func newCachingTransport(next http.RoundTripper, cache CacheAdaptor) http.RoundTripper {
