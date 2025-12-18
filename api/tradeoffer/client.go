@@ -317,10 +317,10 @@ func (p partnerInventoryResponseDecoder) Decode(response io.ReadCloser, result *
 
 	for key, description := range result.Descriptions {
 		if err = json.Unmarshal(description.JsonDescriptionLines, &description.DescriptionLines); err != nil {
-			return eris.Wrapf(err, "error unmarshalling json description line, key: %d", key)
+			return eris.Wrapf(err, "error unmarshalling json description line, key: %s", key)
 		}
 		if err = json.Unmarshal(description.JsonTags, &description.Tags); err != nil {
-			return eris.Wrapf(err, "error unmarshalling json tag, key: %d", key)
+			return eris.Wrapf(err, "error unmarshalling json tag, key: %s", key)
 		}
 	}
 
